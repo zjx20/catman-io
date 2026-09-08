@@ -1,0 +1,50 @@
+# 「小貓人」（siu2 maau1 jan4）粤语唤醒词训练配置。
+# 所有键的默认值和含义见 training/wakeword/config.py。
+model_name: siu_maau_jan
+wake_phrase: 小貓人
+workdir: training/wakeword/work/siu_maau_jan
+
+tts:
+  voices: [zh-HK-HiuGaaiNeural, zh-HK-HiuMaanNeural, zh-HK-WanLungNeural]
+  rates: ["-20%", "-10%", "+0%", "+10%", "+20%"]
+  pitches: ["-30Hz", "-15Hz", "+0Hz", "+15Hz", "+30Hz"]
+  negative_rates: ["-10%", "+0%", "+15%"]
+  negative_pitches: ["+0Hz"]
+  other_language_voices:
+    zh-CN: [zh-CN-XiaoxiaoNeural, zh-CN-YunxiNeural]
+    en-US: [en-US-AriaNeural, en-US-GuyNeural]
+  concurrency: 4
+
+data:
+  # 留空 = 用 training/wakeword/phrases.py 里的默认清单
+  positive_phrases: []
+  adversarial_phrases: []
+  general_phrases: []
+  # 真人录音（16 kHz 单声道 wav，或任意采样率会自动重采样）。哪怕只有几十条，也能明显提升真实环境的召回。
+  extra_positive_dirs: []
+  extra_negative_dirs: []
+  val_fraction: 0.15
+  # openWakeWord 预计算的通用负样本特征，按小时计下载（每小时约 15 MB）；0 = 不用
+  precomputed_negative_hours: 20
+  # 11 小时验证集特征（约 180 MB），用来估计每小时误唤醒次数并挑选检查点
+  fp_validation: true
+
+augment:
+  clip_seconds: 2.0
+  rounds_positive: 4
+  rounds_negative: 2
+  # 推荐：用目标设备在真实环境录几段噪声（电视、厨房、街声）放进来
+  background_dirs: []
+  rir_dirs: []
+  download_rirs: true
+
+train:
+  layer_size: 32
+  n_blocks: 1
+  steps: 20000
+  batch_positive: 50
+  batch_negative: 50
+  batch_precomputed: 1024
+  max_negative_weight: 1500
+  target_fp_per_hour: 0.2
+  seed: 0

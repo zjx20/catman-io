@@ -1,0 +1,12 @@
+# catman-io 运行时配置示例：catman-io wake -c config.yaml
+audio:
+  device: null        # sounddevice 设备编号或名字子串（catman-io devices 查看）；null = 系统默认
+  channel: 0          # 多声道设备取哪一路
+  sample_rate: null   # null = 优先 16 kHz，不支持则自动重采样
+
+wakeword:
+  models: []          # 空 = 随包附带的模型；也可以填自己训练导出的 .onnx
+  threshold: 0.5      # 触发阈值，误唤醒多就调高，叫不醒就调低
+  patience: 1         # 连续多少帧（80 ms）高于阈值才触发
+  cooldown: 2.0       # 触发后的冷却秒数
+  vad_threshold: 0.0  # >0 时只在有人声时允许触发（silero VAD）

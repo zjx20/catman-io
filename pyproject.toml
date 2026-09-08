@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "catman-io"
+version = "0.1.0"
+description = "catman 的语音输入输出软件栈：粤语优先的唤醒词、VAD、语音识别、意图识别、音频流推送与语音输出"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "catman contributors" }]
+keywords = ["cantonese", "wake-word", "voice-assistant", "openwakeword", "speech"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+# 运行时依赖刻意保持很轻：小主机上只需要 onnxruntime 跑三个小模型。
+dependencies = [
+  "numpy>=1.24",
+  "openwakeword>=0.6.0",
+  "onnxruntime>=1.16",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# 麦克风采集 / 扬声器播放（需要系统 PortAudio：apt install libportaudio2）
+audio = ["sounddevice>=0.4.6"]
+# 训练唤醒词模型（在开发机上跑，不需要装到目标机器）
+train = [
+  "torch>=2.1",
+  "edge-tts>=6.1",
+  "soundfile>=0.12",
+  "scipy>=1.10",
+  "tqdm>=4.64",
+  "requests>=2.28",
+  "onnx>=1.14",
+]
+dev = [
+  "pytest>=7",
+  "ruff>=0.4",
+  "soundfile>=0.12",
+  "scipy>=1.10",
+]
+
+[project.scripts]
+catman-io = "catman_io.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/zjx20/catman-io"
+"Main project" = "https://github.com/zjx20/catman"
+
+[tool.setuptools.packages.find]
+include = ["catman_io*"]
+
+[tool.setuptools.package-data]
+"catman_io.wakeword" = ["models/*.onnx", "models/*.json"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["network: tests that need internet access (base model download)"]
