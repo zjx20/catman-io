@@ -1,0 +1,259 @@
+{
+  "model_name": "siu_maau_jan",
+  "wake_phrase": "小貓人",
+  "language": "yue (Cantonese)",
+  "input_shape": [
+    16,
+    96
+  ],
+  "framework": "openwakeword",
+  "trained_at": "2026-09-08T18:04:16Z",
+  "training_seconds": 953.0,
+  "data": {
+    "positive_train": 4048,
+    "negative_train": 7416,
+    "positive_val": 752,
+    "negative_val": 1380,
+    "precomputed_negatives": 281250,
+    "fp_validation_hours": 10.7
+  },
+  "selection": {
+    "selected": "single@3/1894",
+    "metrics": {
+      "val_recall": 0.7367021441459656,
+      "val_fp": 13,
+      "val_acc": 0.9010319113731384,
+      "fp_windows_per_hour": 0.2804641161744695,
+      "activations_per_hour": 0.1869760774496463,
+      "stage": 3,
+      "step": 1894,
+      "loss": 0.8254246115684509
+    },
+    "candidates": [
+      {
+        "name": "single@3/1894",
+        "metrics": {
+          "val_recall": 0.7367021441459656,
+          "val_fp": 13,
+          "val_acc": 0.9010319113731384,
+          "fp_windows_per_hour": 0.2804641161744695,
+          "activations_per_hour": 0.1869760774496463,
+          "stage": 3,
+          "step": 1894,
+          "loss": 0.8254246115684509
+        }
+      },
+      {
+        "name": "average_of_5",
+        "metrics": {
+          "val_recall": 0.7340425252914429,
+          "val_fp": 13,
+          "val_acc": 0.9000937938690186,
+          "fp_windows_per_hour": 0.2804641161744695,
+          "activations_per_hour": 0.1869760774496463
+        }
+      }
+    ]
+  },
+  "config": {
+    "model_name": "siu_maau_jan",
+    "wake_phrase": "小貓人",
+    "workdir": "training/wakeword/work/siu_maau_jan",
+    "tts": {
+      "voices": [
+        "zh-HK-HiuGaaiNeural",
+        "zh-HK-HiuMaanNeural",
+        "zh-HK-WanLungNeural"
+      ],
+      "rates": [
+        "-20%",
+        "-10%",
+        "+0%",
+        "+10%",
+        "+20%"
+      ],
+      "pitches": [
+        "-30Hz",
+        "-15Hz",
+        "+0Hz",
+        "+15Hz",
+        "+30Hz"
+      ],
+      "negative_rates": [
+        "-10%",
+        "+0%",
+        "+15%"
+      ],
+      "negative_pitches": [
+        "+0Hz"
+      ],
+      "other_language_voices": {
+        "zh-CN": [
+          "zh-CN-XiaoxiaoNeural",
+          "zh-CN-YunxiNeural"
+        ],
+        "en-US": [
+          "en-US-AriaNeural",
+          "en-US-GuyNeural"
+        ]
+      },
+      "concurrency": 6,
+      "retries": 5,
+      "trim_db": -45.0,
+      "max_positive_clips": 0,
+      "max_negative_clips": 0
+    },
+    "data": {
+      "positive_phrases": [],
+      "adversarial_phrases": [],
+      "general_phrases": [],
+      "mandarin_phrases": [],
+      "english_phrases": [],
+      "extra_positive_dirs": [],
+      "extra_negative_dirs": [],
+      "val_fraction": 0.15,
+      "precomputed_negative_hours": 100,
+      "fp_validation": true
+    },
+    "augment": {
+      "clip_seconds": 2.0,
+      "rounds_positive": 8,
+      "rounds_negative": 4,
+      "background_dirs": [],
+      "rir_dirs": [],
+      "download_rirs": true,
+      "speed_factors": [
+        0.9,
+        1.0,
+        1.1
+      ],
+      "p_speed": 0.5,
+      "snr_db": [
+        -5.0,
+        20.0
+      ],
+      "p_background": 0.75,
+      "p_colored_noise": 0.3,
+      "colored_snr_db": [
+        5.0,
+        30.0
+      ],
+      "p_babble": 0.2,
+      "babble_snr_db": [
+        0.0,
+        15.0
+      ],
+      "p_rir": 0.5,
+      "p_bandstop": 0.2,
+      "p_lowpass": 0.15,
+      "p_distortion": 0.15,
+      "peak_range": [
+        0.05,
+        1.0
+      ],
+      "end_jitter": 0.2,
+      "batch_size": 64
+    },
+    "train": {
+      "layer_size": 32,
+      "n_blocks": 1,
+      "dropout": 0.1,
+      "steps": 30000,
+      "batch_positive": 50,
+      "batch_negative": 50,
+      "batch_precomputed": 1024,
+      "lr": 0.0001,
+      "max_negative_weight": 1500.0,
+      "target_fp_per_hour": 0.2,
+      "seed": 0,
+      "threads": 0
+    }
+  },
+  "evaluation": {
+    "clean": {
+      "n_positive": 94,
+      "n_negative": 345,
+      "recall@0.3": 0.9574,
+      "recall@0.5": 0.9468,
+      "recall@0.7": 0.9255,
+      "recall@0.9": 0.8723,
+      "false_accept@0.3": 0.0348,
+      "false_accept@0.5": 0.029,
+      "false_accept@0.7": 0.0261,
+      "false_accept@0.9": 0.0203,
+      "false_accept_by_kind@0.5": {
+        "adversarial": 0.087,
+        "general": 0.0
+      },
+      "positive_score_p10": 0.7958,
+      "negative_score_p99": 0.968
+    },
+    "top_false_accepts": [
+      {
+        "score": 0.989,
+        "text": "燒貓人"
+      },
+      {
+        "score": 0.988,
+        "text": "小貓銀"
+      },
+      {
+        "score": 0.986,
+        "text": "笑貓人"
+      },
+      {
+        "score": 0.986,
+        "text": "秒貓人"
+      },
+      {
+        "score": 0.945,
+        "text": "燒貓人"
+      },
+      {
+        "score": 0.94,
+        "text": "小貓忍"
+      },
+      {
+        "score": 0.934,
+        "text": "小貓恩"
+      },
+      {
+        "score": 0.826,
+        "text": "小貌人"
+      },
+      {
+        "score": 0.815,
+        "text": "小貓認"
+      },
+      {
+        "score": 0.684,
+        "text": "燒貓人"
+      }
+    ],
+    "augmented": {
+      "n_positive": 94,
+      "n_negative": 345,
+      "recall@0.3": 0.9574,
+      "recall@0.5": 0.9149,
+      "recall@0.7": 0.8936,
+      "recall@0.9": 0.8191,
+      "false_accept@0.3": 0.0725,
+      "false_accept@0.5": 0.0522,
+      "false_accept@0.7": 0.0493,
+      "false_accept@0.9": 0.0319,
+      "false_accept_by_kind@0.5": {
+        "adversarial": 0.1217,
+        "general": 0.0174
+      },
+      "positive_score_p10": 0.6986,
+      "negative_score_p99": 0.9799
+    },
+    "fp_validation": {
+      "hours": 10.7,
+      "activations_per_hour@0.3": 0.467,
+      "activations_per_hour@0.5": 0.187,
+      "activations_per_hour@0.7": 0.093,
+      "activations_per_hour@0.9": 0.0
+    }
+  }
+}

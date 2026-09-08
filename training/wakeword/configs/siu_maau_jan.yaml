@@ -24,15 +24,16 @@ data:
   extra_positive_dirs: []
   extra_negative_dirs: []
   val_fraction: 0.15
-  # openWakeWord 预计算的通用负样本特征，按小时计下载（每小时约 15 MB）；0 = 不用
-  precomputed_negative_hours: 20
+  # openWakeWord 预计算的通用负样本特征，按小时计下载（每小时约 15 MB）；0 = 不用。
+  # 20 小时时模型会死记训练负样本（通用音频每小时误唤醒 38 次），100 小时降到 0.2 次以下
+  precomputed_negative_hours: 100
   # 11 小时验证集特征（约 180 MB），用来估计每小时误唤醒次数并挑选检查点
   fp_validation: true
 
 augment:
   clip_seconds: 2.0
-  rounds_positive: 4
-  rounds_negative: 2
+  rounds_positive: 8
+  rounds_negative: 4
   # 推荐：用目标设备在真实环境录几段噪声（电视、厨房、街声）放进来
   background_dirs: []
   rir_dirs: []
@@ -41,7 +42,8 @@ augment:
 train:
   layer_size: 32
   n_blocks: 1
-  steps: 20000
+  dropout: 0.1
+  steps: 30000
   batch_positive: 50
   batch_negative: 50
   batch_precomputed: 1024

@@ -35,7 +35,7 @@ python -m training.wakeword install --config training/wakeword/configs/siu_maau_
 | 正样本 | edge-tts zh-HK 三个音色 × 5 档语速 × 5 档音高 × 8 种读法（标点 / 前缀） | 600 条 |
 | 对抗负样本 | `phrases.py` 手写：只说一半、换字、换调、换序、相似常用词 | 约 90 个短语 × 3 音色 × 3 语速 |
 | 普通负样本 | 130 句日常粤语 + 46 句普通话（zh-CN 音色）+ 20 句英语（en-US 音色） | |
-| 通用负样本特征 | openWakeWord 作者预计算的 ACAV100M 特征，按小时只下载开头一段（每小时约 15 MB） | `precomputed_negative_hours` |
+| 通用负样本特征 | openWakeWord 作者预计算的 ACAV100M 特征，按小时只下载开头一段（每小时约 15 MB） | `precomputed_negative_hours`，默认 100 小时 |
 | 误唤醒验证集 | openWakeWord 的 11 小时验证集特征（约 180 MB） | `fp_validation` |
 | 房间混响 | MIT 环境冲激响应 270 条（约 8 MB） | `download_rirs` |
 | 环境噪声 | **需要自己提供**（`background_dirs`），没有就只用合成噪声 / 人声嘈杂 | 强烈建议 |
