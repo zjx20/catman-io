@@ -24,7 +24,9 @@ python -m training.wakeword install --config training/wakeword/configs/siu_maau_
 ```
 
 每一步都是幂等的：合成只补缺失的片段，下载支持断点续传，特征文件存在就跳过（`--overwrite` 重算）。
-默认配置合成约 2800 条片段（约 10 分钟），特征几分钟，训练 20000 步在 4 核 CPU 上约 10 分钟。
+默认配置合成约 2800 条片段（约 8 分钟，取决于网络），特征几分钟，训练在 4 核 CPU 上约 5～10 分钟。
+`evaluate` 除了各阈值的召回率 / 误接受率，还会按负样本类别（adversarial / general）统计误接受，
+并列出最容易被误接受的短语——想压误唤醒时，先看这一行。
 
 ## 数据从哪来
 

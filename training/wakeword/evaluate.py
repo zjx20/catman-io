@@ -97,19 +97,34 @@ def run_evaluation(
     for name, (p_audio, n_audio) in sets.items():
         ps = clip_scores(model_path, [to_int16(x) for x in p_audio])
         ns = clip_scores(model_path, [to_int16(x) for x in n_audio])
+        kinds = sorted({s.kind for s in neg})
         result[name] = {
             "n_positive": len(ps),
             "n_negative": len(ns),
             **{f"recall@{t}": round(float((ps >= t).mean()), 4) for t in THRESHOLDS},
             **{f"false_accept@{t}": round(float((ns >= t).mean()), 4) for t in THRESHOLDS},
+            "false_accept_by_kind@0.5": {
+                k: round(float(np.mean([sc >= 0.5 for s, sc in zip(neg, ns, strict=True) if s.kind == k])), 4)
+                for k in kinds
+            },
             "positive_score_p10": round(float(np.percentile(ps, 10)), 4),
             "negative_score_p99": round(float(np.percentile(ns, 99)), 4),
         }
+        if name == "clean":
+            accepted = sorted(
+                ((float(sc), s.text) for s, sc in zip(neg, ns, strict=True) if sc >= 0.5), reverse=True
+            )
+            result["top_false_accepts"] = [{"score": round(sc, 3), "text": t} for sc, t in accepted[:30]]
     if validation is not None and Path(validation).exists():
         result["fp_validation"] = fp_per_hour(model_path, Path(validation))
 
     out = model_path.with_name("eval.json")
     out.write_text(json.dumps(result, ensure_ascii=False, indent=2))
+    meta_path = model_path.with_suffix(".json")
+    if meta_path.exists():  # 评估结果并入模型元数据，install 时一起带走
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        meta["evaluation"] = {k: v for k, v in result.items() if k != "model"}
+        meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     print(format_report(result))
     log.info("wrote %s", out)
     return result
@@ -124,6 +139,15 @@ def format_report(r: dict) -> str:
             lines.append(
                 f"{name:<10}{t:>6}{r[name][f'recall@{t}']:>9.3f}{r[name][f'false_accept@{t}']:>14.3f}"
             )
+    if "clean" in r:
+        by_kind = r["clean"]["false_accept_by_kind@0.5"]
+        lines.append("")
+        lines.append(
+            "false-accept@0.5 by negative kind: " + ", ".join(f"{k} {v:.3f}" for k, v in by_kind.items())
+        )
+    if r.get("top_false_accepts"):
+        top = "; ".join(f"{d['text']} ({d['score']:.2f})" for d in r["top_false_accepts"][:8])
+        lines.append("most accepted negatives: " + top)
     if "fp_validation" in r:
         fv = r["fp_validation"]
         lines.append("")

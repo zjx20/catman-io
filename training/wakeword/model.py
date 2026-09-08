@@ -17,10 +17,19 @@ from torch import nn
 
 
 class WakeWordNet(nn.Module):
-    def __init__(self, n_frames: int = 16, n_features: int = 96, layer_size: int = 32, n_blocks: int = 1):
+    def __init__(
+        self,
+        n_frames: int = 16,
+        n_features: int = 96,
+        layer_size: int = 32,
+        n_blocks: int = 1,
+        dropout: float = 0.0,
+    ):
         super().__init__()
         self.n_frames, self.n_features = n_frames, n_features
         self.flatten = nn.Flatten()
+        # 输入特征 dropout：负样本远比正样本多样，少量 dropout 能明显缓解对训练负样本的死记硬背
+        self.drop = nn.Dropout(dropout)
         self.layer1 = nn.Linear(n_frames * n_features, layer_size)
         self.norm1 = nn.LayerNorm(layer_size)
         self.blocks = nn.ModuleList(
@@ -32,7 +41,7 @@ class WakeWordNet(nn.Module):
         self.out = nn.Linear(layer_size, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = torch.relu(self.norm1(self.layer1(self.flatten(x))))
+        x = torch.relu(self.norm1(self.layer1(self.drop(self.flatten(x)))))
         for block in self.blocks:
             x = block(x)
         return torch.sigmoid(self.out(x))

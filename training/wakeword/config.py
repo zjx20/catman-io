@@ -105,6 +105,7 @@ class AugmentConfig:
 class TrainConfig:
     layer_size: int = 32
     n_blocks: int = 1
+    dropout: float = 0.1
     steps: int = 20000
     batch_positive: int = 50
     batch_negative: int = 50

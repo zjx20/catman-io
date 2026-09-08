@@ -101,7 +101,7 @@ class Trainer:
         self.rng = np.random.default_rng(t.seed)
         threads = t.threads or max(1, os.cpu_count() or 1)
         torch.set_num_threads(threads)
-        self.model = WakeWordNet(ds.n_frames, ds.n_features, t.layer_size, t.n_blocks)
+        self.model = WakeWordNet(ds.n_frames, ds.n_features, t.layer_size, t.n_blocks, t.dropout)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=t.lr)
         self.checkpoints: list[Checkpoint] = []
         self.history: list[dict[str, float]] = []
@@ -210,12 +210,8 @@ class Trainer:
                 metrics.update({"stage": stage, "step": step, "loss": float(loss.item())})
                 self.history.append(metrics)
                 self.checkpoints.append(Checkpoint(step, stage, copy.deepcopy(model.state_dict()), metrics))
-                log.info(
-                    "stage %d step %d: %s",
-                    stage,
-                    step,
-                    {k: (round(v, 4) if isinstance(v, float) else v) for k, v in metrics.items()},
-                )
+                shown = {k: (round(v, 4) if isinstance(v, float) else v) for k, v in metrics.items()}
+                bar.write(f"stage {stage} step {step}: {shown}")  # 用 tqdm 输出，不和进度条串行
 
     def train(self) -> tuple[WakeWordNet, dict]:
         t = self.cfg.train
@@ -265,7 +261,7 @@ class Trainer:
         ]
         if len(top) > 1:
             avg = average_state_dicts([c.state for c in top])
-            m = WakeWordNet(self.ds.n_frames, self.ds.n_features, t.layer_size, t.n_blocks)
+            m = WakeWordNet(self.ds.n_frames, self.ds.n_features, t.layer_size, t.n_blocks, t.dropout)
             m.load_state_dict(avg)
             candidates.append((f"average_of_{len(top)}", avg, self.evaluate(m)))
 
@@ -274,7 +270,7 @@ class Trainer:
             return (0 if fp <= t.target_fp_per_hour else 1, -c[2]["val_recall"], fp)
 
         name, state, metrics = sorted(candidates, key=cand_score)[0]
-        final = WakeWordNet(self.ds.n_frames, self.ds.n_features, t.layer_size, t.n_blocks)
+        final = WakeWordNet(self.ds.n_frames, self.ds.n_features, t.layer_size, t.n_blocks, t.dropout)
         final.load_state_dict(state)
         final.eval()
         log.info(

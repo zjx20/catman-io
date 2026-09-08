@@ -69,10 +69,14 @@ def compute_features(
 
 # ---------------------------------------------------------------- 样本来源
 class Sample:
-    __slots__ = ("path", "positive", "weight")
+    __slots__ = ("path", "positive", "weight", "kind", "text")
 
-    def __init__(self, path: Path, positive: bool, weight: int = 1):
+    def __init__(self, path: Path, positive: bool, weight: int = 1, kind: str = "", text: str = ""):
         self.path, self.positive, self.weight = path, positive, weight
+        self.kind, self.text = (
+            kind,
+            text,
+        )  # 来源类别（positive/adversarial/general/extra）与文本，仅用于评估报告
 
 
 def extra_dir_samples(
@@ -83,7 +87,7 @@ def extra_dir_samples(
     for d in dirs:
         for p in sorted(Path(d).rglob("*.wav")):
             key = hashlib.sha1(p.name.encode()).hexdigest()
-            out[split_for(key, val_fraction)].append(Sample(p, positive, weight))
+            out[split_for(key, val_fraction)].append(Sample(p, positive, weight, kind="extra", text=p.stem))
     return out
 
 
@@ -94,7 +98,7 @@ def gather_samples(cfg: TrainingConfig, records: list[ClipRecord]) -> dict[tuple
     }
     for r in records:
         lb = "positive" if r.is_positive else "negative"
-        groups[(lb, r.split)].append(Sample(cfg.clips_dir / r.wav, r.is_positive))
+        groups[(lb, r.split)].append(Sample(cfg.clips_dir / r.wav, r.is_positive, kind=r.label, text=r.text))
     for split, samples in extra_dir_samples(
         cfg.data.extra_positive_dirs, True, cfg.data.val_fraction, 3
     ).items():
