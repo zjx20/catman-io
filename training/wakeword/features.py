@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 from numpy.lib.format import open_memmap
 
-from .augment import SR, AudioPool, Augmenter, load_audio_16k, load_rirs, to_int16
+from .augment import SR, AudioPool, Augmenter, load_audio_16k, load_rirs, to_int16, trim_to_speech
 from .config import TrainingConfig
 from .tts import ClipRecord, read_manifest, split_for
 
@@ -123,13 +123,19 @@ def iter_augmented(
         for idx in order:
             s = expanded[idx]
             if s.path not in cache:
-                cache[s.path] = load_audio_16k(s.path)
+                cache[s.path] = load_sample_audio(s)
             batch.append(augmenter(cache[s.path], s.positive))
             if len(batch) == batch_size:
                 yield to_int16(np.stack(batch))
                 batch = []
         if batch:
             yield to_int16(np.stack(batch))
+
+
+def load_sample_audio(s: Sample) -> np.ndarray:
+    """真人录音（kind == "extra"）先裁到有声段；TTS 片段合成时已经裁过。"""
+    audio = load_audio_16k(s.path)
+    return trim_to_speech(audio) if s.kind == "extra" else audio
 
 
 def n_examples(samples: list[Sample], rounds: int) -> int:

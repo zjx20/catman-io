@@ -108,3 +108,19 @@ def test_augmenter_is_deterministic_and_valid():
     # 不同 seed 应该得到不同结果
     a3 = Augmenter(cfg, background=bg, babble=bg, rirs=rirs, seed=8)
     assert not np.array_equal(a3(x, True), outs1[0])
+
+
+def test_trim_to_speech_relative_to_noise_floor():
+    from training.wakeword.augment import trim_to_speech
+
+    rng = np.random.default_rng(5)
+    noise = (rng.standard_normal(3 * SR) * 0.003).astype(np.float32)  # 约 -50 dBFS 的本底
+    speech = tone(0.6)
+    x = noise.copy()
+    x[SR : SR + len(speech)] += speech
+    y = trim_to_speech(x)
+    # 保留了整段语音，前面留 ≤100 ms，后面留 ≤80 ms
+    assert abs(len(y) - (len(speech) + 0.18 * SR)) < 0.03 * SR
+    assert np.abs(y[: int(0.1 * SR)]).max() < 0.02
+    # 纯噪声：什么都不裁
+    assert len(trim_to_speech(noise)) == len(noise) or len(trim_to_speech(noise)) > 0

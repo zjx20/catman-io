@@ -14,9 +14,9 @@ from pathlib import Path
 
 import numpy as np
 
-from .augment import load_audio_16k, to_int16
+from .augment import to_int16
 from .config import TrainingConfig
-from .features import build_augmenter, gather_samples
+from .features import build_augmenter, gather_samples, load_sample_audio
 from .model import onnx_predictor
 from .tts import read_manifest
 
@@ -86,8 +86,8 @@ def run_evaluation(
     if not pos or not neg:
         raise SystemExit("validation split is empty; check val_fraction / manifest")
 
-    pos_audio = [load_audio_16k(s.path) for s in pos]
-    neg_audio = [load_audio_16k(s.path) for s in neg]
+    pos_audio = [load_sample_audio(s) for s in pos]
+    neg_audio = [load_sample_audio(s) for s in neg]
     augmenter = build_augmenter(cfg, records, rir_dir, seed=cfg.train.seed + 99)
 
     sets = {

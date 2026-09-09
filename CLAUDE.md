@@ -18,6 +18,7 @@ catman-io setup                      # 下载 openWakeWord 基础模型（约 5 
 ruff check catman_io training tests && pytest -q
 
 catman-io wake-file tests/data/positive_siu_maau_jan_hiugaai.wav --scores   # 离线跑一条录音
+catman-io webdemo --open             # 网页版：浏览器麦克风实时看命中，可保存录音（需要 [demo] 的 aiohttp）
 python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.yaml
 python -m training.wakeword install --config training/wakeword/configs/siu_maau_jan.yaml
 ```
@@ -34,6 +35,8 @@ python -m training.wakeword install --config training/wakeword/configs/siu_maau_
 - 正样本训练时右对齐到 2 秒窗口末尾，所以 `phrases.py` 里正样本只能加前缀不能加后缀；
   负样本文本绝不能包含唤醒词（`tests/test_phrases.py` 守着）。
 - 文档、注释、提交信息用中文；README 面向使用者，不提具体硬件型号。
+- `catman_io/webdemo/` 是开发用的网页 demo：`server.py` 是 aiohttp（可选依赖 `[demo]`），`static/` 是无框架的原生 JS；
+  协议见 `server.py` 顶部注释，`tests/test_webdemo.py` 有检查前后端消息类型一致的测试。
 
 ## 排查
 

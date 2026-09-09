@@ -79,6 +79,21 @@ catman-io wake-file recording.wav --scores          # 对一段录音离线检�
 ```
 
 阈值、冷却时间、连续帧数等都可以用参数或 YAML 配置（见 `config.example.yaml`）。
+
+### 网页版测试（浏览器麦克风）
+
+不想折腾 PortAudio，或者想边看分数曲线边试，可以起一个本地网页：
+
+```bash
+pip install -e ".[demo]"
+catman-io webdemo --open          # 默认 http://127.0.0.1:8765 ，--record-dir 指定录音目录
+```
+
+页面里点"开始监听"，对着麦克风说「小貓人」，就能看到实时分数、命中记录、折合每小时的命中次数，
+阈值 / 连续帧 / 冷却都能拖着调。**"保存最近 3 秒"按钮会把录音存成 16 kHz WAV**（默认 `data/recordings/`），
+正好用来收集真人正样本和误唤醒片段，填进训练配置的 `extra_positive_dirs` / `extra_negative_dirs` 重训。
+浏览器只允许 `http://localhost` 或 https 页面用麦克风，要在别的机器上开页面就走 SSH 隧道
+（`ssh -L 8765:127.0.0.1:8765 <主机>`）。
 在代码里使用：
 
 ```python

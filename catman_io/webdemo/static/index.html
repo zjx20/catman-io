@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小貓人 · 唤醒词测试</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --surface: #fcfcfb; --surface-2: #f0efec; --border: #d9d8d3;
+    --text: #0b0b0b; --text-2: #52514e; --muted: #8a8984;
+    --series: #2a78d6; --series-soft: #cde2fb;
+    --good: #0ca30c; --critical: #d03b3b; --warning: #fab219;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --surface: #1a1a19; --surface-2: #262625; --border: #3a3a38; --text: #ffffff; --text-2: #c3c2b7;
+            --muted: #8f8e88; --series: #3987e5; --series-soft: #184f95; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface); color: var(--text);
+         font: 14px/1.5 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h1 small { color: var(--text-2); font-weight: normal; font-size: 13px; margin-left: 8px; }
+  #status { color: var(--text-2); min-height: 1.5em; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin: 12px 0; }
+  label { color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; }
+  input[type=range] { width: 120px; }
+  select { max-width: 260px; }
+  button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
+           background: var(--surface-2); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--series); color: #fff; border-color: var(--series); }
+  button:disabled { opacity: .5; cursor: default; }
+  .card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 12px 0; background: var(--surface); }
+  .meter { display: flex; align-items: center; gap: 16px; }
+  .meter .num { font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 110px; }
+  .bar { position: relative; flex: 1; height: 18px; background: var(--surface-2); border-radius: 9px; overflow: hidden; }
+  .bar .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--series); border-radius: 9px; transition: width 60ms linear; }
+  .bar .fill.hit { background: var(--good); }
+  .bar .thr { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text-2); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .stat .k { color: var(--muted); font-size: 12px; }
+  .stat .v { font-size: 20px; font-variant-numeric: tabular-nums; }
+  canvas { width: 100%; height: 180px; display: block; }
+  #hover { color: var(--text-2); font-size: 12px; min-height: 1.5em; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-2); font-weight: normal; font-size: 12px; }
+  .hint { color: var(--muted); font-size: 12px; }
+  code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>「小貓人」唤醒词测试<small>浏览器麦克风 → 服务端 openWakeWord 检测器</small></h1>
+  <div id="status">未连接</div>
+
+  <div class="card">
+    <div class="row">
+      <button id="start" class="primary">开始监听</button>
+      <button id="stop" disabled>停止</button>
+      <label>麦克风 <select id="device"><option value="">默认</option></select></label>
+      <label><input type="checkbox" id="ec" checked> 回声消除</label>
+      <label><input type="checkbox" id="ns" checked> 降噪</label>
+      <label><input type="checkbox" id="agc" checked> 自动增益</label>
+    </div>
+    <div class="row">
+      <label>阈值 <input type="range" id="threshold" min="0.1" max="0.95" step="0.05" value="0.5"> <b id="thrV">0.50</b></label>
+      <label>连续帧 <input type="range" id="patience" min="1" max="5" step="1" value="1"> <b id="patV">1</b></label>
+      <label>冷却 <input type="range" id="cooldown" min="0.5" max="5" step="0.5" value="2"> <b id="cdV">2.0</b> s</label>
+    </div>
+    <div class="hint">浏览器只允许在 <code>http://localhost</code> 或 https 页面上用麦克风；测试用的电脑麦克风和目标设备差别很大，这里主要看"叫得应不应、乱不乱触发"。</div>
+  </div>
+
+  <div class="card">
+    <div class="meter">
+      <div class="num" id="score">0.00</div>
+      <div class="bar"><div class="fill" id="fill"></div><div class="thr" id="thrLine" style="left:50%"></div></div>
+    </div>
+    <canvas id="chart" width="900" height="180" aria-label="最近 20 秒的分数曲线"></canvas>
+    <div id="hover">最近 20 秒的分数；虚线是阈值，绿点是命中。鼠标悬停可读数。</div>
+  </div>
+
+  <div class="card stats">
+    <div class="stat"><div class="k">命中</div><div class="v" id="hits">0</div></div>
+    <div class="stat"><div class="k">已监听</div><div class="v" id="elapsed">0:00</div></div>
+    <div class="stat"><div class="k">折合每小时命中</div><div class="v" id="rate">–</div></div>
+    <div class="stat"><div class="k">输入电平</div><div class="v" id="level">–</div></div>
+    <div class="stat"><div class="k">采样率</div><div class="v" id="sr">–</div></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="savePos">保存最近 3 秒为正样本</button>
+      <button id="saveNeg">保存最近 3 秒为负样本</button>
+      <label><input type="checkbox" id="autoSave"> 每次命中自动保存 3 秒（收集误唤醒）</label>
+      <button id="reset">重置检测器</button>
+    </div>
+    <div class="hint" id="recInfo">录音目录：–</div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>#</th><th>时间</th><th>流时间</th><th>分数</th><th>模型</th></tr></thead>
+      <tbody id="log"></tbody>
+    </table>
+  </div>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

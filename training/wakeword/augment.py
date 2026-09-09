@@ -40,6 +40,28 @@ def active_rms(x: np.ndarray, floor: float = 1e-4) -> float:
     return rms(x[mask]) if mask.any() else rms(x)
 
 
+def trim_to_speech(
+    x: np.ndarray, sr: int = SR, pad_before: float = 0.1, pad_after: float = 0.08, min_db: float = -50.0
+) -> np.ndarray:
+    """按相对本底噪声的阈值裁掉首尾静音，给真人录音用（录音前后总有一段房间噪声）。
+
+    阈值 = max(本底 + 6 dB, min_db)，本底取 10 ms 帧能量的第 20 百分位；起点前多留 100 ms 保住轻辅音。
+    """
+    hop = sr // 100
+    if len(x) < 2 * hop:
+        return x
+    n = len(x) // hop
+    frames = x[: n * hop].reshape(n, hop)
+    db = 20 * np.log10(np.sqrt((frames**2).mean(axis=1)) + 1e-9)
+    threshold = max(float(np.percentile(db, 20)) + 6.0, min_db)
+    active = np.where(db > threshold)[0]
+    if len(active) == 0:
+        return x
+    start = max(0, int(active[0] * hop - pad_before * sr))
+    end = min(len(x), int((active[-1] + 1) * hop + pad_after * sr))
+    return x[start:end]
+
+
 class AudioPool:
     """一堆音频拼在一起随机切片：环境噪声池、人声嘈杂池都用它。"""
 

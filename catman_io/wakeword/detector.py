@@ -116,6 +116,18 @@ class WakeWordDetector:
         self._last_fired.clear()
         self._frames = 0
 
+    def configure(
+        self, threshold: float | None = None, patience: int | None = None, cooldown: float | None = None
+    ) -> None:
+        """运行中调整触发参数（网页 demo 的滑块用）。"""
+        if threshold is not None:
+            self.threshold = float(threshold)
+        if cooldown is not None:
+            self.cooldown = float(cooldown)
+        if patience is not None and max(1, int(patience)) != self.patience:
+            self.patience = max(1, int(patience))
+            self._history = defaultdict(lambda: deque(maxlen=self.patience))
+
     def process(self, frame: np.ndarray) -> list[Detection]:
         """喂入一帧（1280 个采样点；float 会自动转 int16），返回本帧触发的检测。"""
         frame = to_int16(np.asarray(frame).reshape(-1))

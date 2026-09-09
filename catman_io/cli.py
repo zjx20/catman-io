@@ -101,6 +101,25 @@ def cmd_wake_file(args) -> int:
     return 0 if dets or not args.expect else 1
 
 
+def cmd_webdemo(args) -> int:
+    from catman_io.webdemo.server import run
+
+    cfg = Config.load(args.config)
+    w = cfg.wakeword
+    run(
+        host=args.host,
+        port=args.port,
+        model_paths=args.models or w.models or None,
+        threshold=args.threshold if args.threshold is not None else w.threshold,
+        patience=args.patience if args.patience is not None else w.patience,
+        cooldown=args.cooldown if args.cooldown is not None else w.cooldown,
+        vad_threshold=args.vad if args.vad is not None else w.vad_threshold,
+        record_dir=args.record_dir,
+        open_browser=args.open,
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="catman-io", description="catman 语音输入输出软件栈")
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -122,6 +141,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--scores", action="store_true", help="逐帧打印分数")
     p.add_argument("--expect", action="store_true", help="没检测到时返回非零退出码（用于测试）")
     p.set_defaults(fn=cmd_wake_file)
+
+    p = sub.add_parser("webdemo", help="网页版测试：浏览器麦克风实时看唤醒词命中，并可保存录音做训练样本")
+    _add_wake_args(p)
+    p.add_argument("--host", default="127.0.0.1", help="监听地址（浏览器只允许 localhost 或 https 用麦克风）")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--record-dir", type=Path, default=Path("data/recordings"), help="保存录音的目录")
+    p.add_argument("--open", action="store_true", help="启动后自动打开浏览器")
+    p.set_defaults(fn=cmd_webdemo)
 
     args = ap.parse_args(argv)
     logging.basicConfig(
