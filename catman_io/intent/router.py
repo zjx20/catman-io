@@ -8,7 +8,7 @@ import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from catman_io.llm import LLMError
 
@@ -36,7 +36,7 @@ class RouteResult:
     error: str | None = None
 
 
-ShadowCallback = Callable[[str, Intent, Intent | None], None]
+ShadowCallback = Callable[[str, Intent, Intent | None, Any], None]  # (原话, 规则意图, LLM 意图, tag)
 
 
 class IntentRouter:
@@ -59,7 +59,9 @@ class IntentRouter:
     def rules(self) -> RuleSet:
         return self.store.current
 
-    def route(self, text: str, *, use_rules: bool = True, use_llm: bool = True) -> RouteResult:
+    def route(
+        self, text: str, *, use_rules: bool = True, use_llm: bool = True, shadow_tag: Any = None
+    ) -> RouteResult:
         self.store.reload_if_changed()
         normalized = normalize(text)
         result = RouteResult(text, normalized, None, "none")
@@ -73,7 +75,7 @@ class IntentRouter:
             if hit is not None:
                 result.intent, result.tier = hit, "rule"
                 if self.llm is not None and self.shadow_rate > 0 and self.rng.random() < self.shadow_rate:
-                    self._shadow(text, hit)
+                    self._shadow(text, hit, shadow_tag)
                 return result
         if use_llm and self.llm is not None:
             t0 = time.perf_counter()
@@ -99,7 +101,7 @@ class IntentRouter:
         result.flags.append("fallthrough_chat")
         return result
 
-    def _shadow(self, text: str, rule_intent: Intent) -> None:
+    def _shadow(self, text: str, rule_intent: Intent, tag: Any) -> None:
         def run() -> None:
             try:
                 got = self.llm.recognize(text) if self.llm is not None else None
@@ -107,7 +109,7 @@ class IntentRouter:
                 log.warning("shadow llm failed: %s", e)
                 return
             if self.on_shadow is not None:
-                self.on_shadow(text, rule_intent, got)
+                self.on_shadow(text, rule_intent, got, tag)
 
         threading.Thread(target=run, name="intent-shadow", daemon=True).start()
 

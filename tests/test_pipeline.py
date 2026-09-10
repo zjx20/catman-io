@@ -146,3 +146,51 @@ def test_echo_responder_and_max_seconds(tmp_path, models):
     pipe.max_seconds = 2.0
     pipe.run()
     assert pipe.frames_seen == 25 and ended == []
+
+
+def test_timer_fires_through_the_pipeline(tmp_path, models):
+    from catman_io.journal import Journal, JournalWriter
+    from catman_io.responder import build_responder
+
+    wake = read_wav("tests/data/positive_siu_maau_jan_hiugaai.wav")
+    sentence = read_wav("tests/data/negative_weather_wanlung.wav")
+    gap = np.zeros(int(0.4 * 16000), dtype=np.int16)
+    wav = make_wav(tmp_path / "in.wav", gap, wake, gap, sentence, gap)
+    cfg = Config.load(None)
+    cfg.data_dir = str(tmp_path)
+    cfg.dialog.followup_seconds = 1.0
+    out = ListOutput()
+    speaker = Speaker(out, volume=1.0)
+    journal = Journal(tmp_path / "journal")
+    responder = build_responder(cfg, speaker=speaker, journal=journal)
+    writer = JournalWriter(journal, cfg)
+    ended = []
+
+    def on_turn(turn, status):
+        writer(turn, status)
+        ended.append((turn.kind, status))
+
+    tts = FakeTTS()
+    pipe = VoicePipeline(
+        cfg,
+        frames=WavFrames(wav),
+        detector=WakeWordDetector(),
+        vad=SileroVAD(),
+        speaker=speaker,
+        responder=responder,
+        asr=FakeASR("計時兩秒"),
+        tts=tts,
+        on_turn=on_turn,
+        timers=responder.ctx.timers,
+    )
+    responder.ctx.clock = pipe.clock
+    pipe.run()
+    assert tts.texts == ["好，兩秒後叫你。", "兩秒到喇"]
+    assert ended == [("voice", "ok"), ("alarm", "ok")]
+    recs = journal.records()
+    assert [r["turn_kind"] for r in recs] == ["voice", "alarm"] and recs[0]["intent"] == "timer.set"
+    assert (
+        recs[0]["slots"] == {"duration": 2}
+        and recs[0]["lat_first_audio_ms"] is not None
+        and recs[0]["flags"] == []
+    )

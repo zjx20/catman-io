@@ -1,4 +1,4 @@
-"""命令行：catman-io run | listen | intent | wake | wake-file | asr | say | webdemo | devices | setup"""
+"""命令行入口（子命令见 catman-io --help）。"""
 
 from __future__ import annotations
 
@@ -326,6 +326,67 @@ def cmd_intent(args) -> int:
     return 2
 
 
+def _parse_since(text: str | None) -> float | None:
+    """1d / 12h / 30m 或 YYYY-MM-DD → 时间戳。"""
+    import datetime as dt
+    import re
+
+    if not text:
+        return None
+    m = re.fullmatch(r"(\d+)([dhm])", text)
+    if m:
+        n, unit = int(m.group(1)), m.group(2)
+        seconds = n * {"d": 86400, "h": 3600, "m": 60}[unit]
+        return time.time() - seconds
+    return dt.datetime.strptime(text, "%Y-%m-%d").timestamp()
+
+
+def cmd_journal(args) -> int:
+    """回合日志：list 列最近回合 / show 看一条 / review 出 bad case 复盘（Markdown）。"""
+    import datetime as dt
+    import json
+
+    from catman_io.journal import BAD_FLAGS, Journal
+    from catman_io.journal.review import build_review, render_markdown, write_markdown
+
+    cfg = Config.load(args.config)
+    journal = Journal(cfg.journal_dir, save_audio=False, keep_days=0)
+    if args.sub == "list":
+        flags = {args.flag} if args.flag else (BAD_FLAGS if args.bad else None)
+        recs = journal.records(since=_parse_since(args.since), flags=flags, limit=args.limit)
+        for r in recs:
+            t = dt.datetime.fromtimestamp(r.get("at", 0)).strftime("%m-%d %H:%M:%S")
+            intent = f"{r.get('intent')}({r.get('tier')})" if r.get("intent") else "-"
+            lat_ms = r.get("lat_first_audio_ms")
+            lat = f"{lat_ms / 1000:.1f}s" if lat_ms is not None else "   -"
+            fl = ",".join(r.get("flags") or [])
+            reply = (r.get("reply_text") or "")[:40]
+            text = r.get("text") or ""
+            head = f"{t} {r['turn_id']} {r.get('status', ''):<9} {lat:>5}"
+            print(f"{head} 「{text}」 → {intent} 「{reply}」 {fl}")
+        print(f"{len(recs)} turn(s)")
+        return 0
+    if args.sub == "show":
+        r = journal.get(args.turn_id)
+        if r is None:
+            print("not found", file=sys.stderr)
+            return 1
+        print(json.dumps(r, ensure_ascii=False, indent=2))
+        return 0
+    if args.sub == "review":
+        from catman_io.intent import load_rules
+
+        intents = {name: spec.description for name, spec in load_rules(cfg).intents.items()}
+        since = _parse_since(args.since)
+        review = build_review(journal, since=since, include_acked=args.all, intents=intents)
+        if args.output:
+            print(f"wrote {write_markdown(review, args.output)} ({review['count']} turn(s))")
+        else:
+            print(render_markdown(review))
+        return 0
+    return 2
+
+
 def cmd_say(args) -> int:
     """合成一段粤语并播放（或写 WAV），顺带看首句延迟。"""
     import numpy as np
@@ -471,6 +532,22 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--cases", type=Path, help="用例文件（默认配置里的）")
     ip.add_parser("list", help="列出意图")
     p.set_defaults(fn=cmd_intent)
+
+    p = sub.add_parser("journal", help="回合日志：list / show / review（bad case 复盘）")
+    p.add_argument("-c", "--config", type=Path, help="YAML 配置")
+    jp = p.add_subparsers(dest="sub", required=True)
+    q = jp.add_parser("list", help="列最近的回合")
+    q.add_argument("--bad", action="store_true", help="只看有 bad case 标记的")
+    q.add_argument("--flag", help="只看带这个标记的")
+    q.add_argument("--since", help="1d / 12h / 30m 或 YYYY-MM-DD")
+    q.add_argument("-n", "--limit", type=int, default=50)
+    q = jp.add_parser("show", help="看一条回合的完整记录")
+    q.add_argument("turn_id")
+    q = jp.add_parser("review", help="输出 bad case 复盘（Markdown）")
+    q.add_argument("--since", help="1d / 12h 或 YYYY-MM-DD")
+    q.add_argument("--all", action="store_true", help="包括已经 ack 过的")
+    q.add_argument("-o", "--output", type=Path, help="写到文件")
+    p.set_defaults(fn=cmd_journal)
 
     p = sub.add_parser("say", help="合成一段粤语并播放（-o 写成 WAV），测试 TTS 与扬声器")
     p.add_argument("text", nargs="+")

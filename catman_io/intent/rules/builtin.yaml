@@ -36,6 +36,8 @@ intents:
       - "^{polite}(?:set|錫|舌|較|校|設|設定|開|整|起|整個|開個)(?:一)?個?{duration}(?:嘅)?(?:timer|鬧鐘|計時器|計時|倒數|提醒){tail}$"
       - "^{polite}{duration}(?:之後|後|後面|之后)(?:叫|嗌|提|提醒|提下|通知)(?:我|下我)?{tail}$"
       - "^{polite}(?:計時|倒數|倒數計時|計){duration}{tail}$"
+      # 冇講幾耐：動作會追問
+      - "^{polite}(?:set|錫|舌|較|校|設|設定|開|整|起)(?:一)?個?(?:timer|鬧鐘|計時器|計時|倒數){tail}$"
     action: builtin.timer
 
   - name: timer.cancel

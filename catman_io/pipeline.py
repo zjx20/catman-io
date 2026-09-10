@@ -38,6 +38,7 @@ from catman_io.dialog import (
     StartTurn,
     State,
     StopSpeaking,
+    TimerFired,
     Transcribe,
     TranscriptEmpty,
     Turn,
@@ -63,6 +64,16 @@ class Response:
     error: str | None = None
     followup: bool = False
     info: dict[str, Any] = field(default_factory=dict)
+
+
+class ClockRef:
+    """可以事后换掉的钟：部件先拿着它，pipeline 建好后再决定是墙钟还是音频时钟。"""
+
+    def __init__(self, fn: Callable[[], float] = time.monotonic):
+        self.fn = fn
+
+    def __call__(self) -> float:
+        return self.fn()
 
 
 class Responder(Protocol):
@@ -125,6 +136,8 @@ class VoicePipeline:
         stop_source: Callable[[], None] | None = None,
         realtime: bool = False,
         max_seconds: float | None = None,
+        timers: Any = None,
+        clock_ref: ClockRef | None = None,
     ):
         self.cfg = cfg
         self.frames = frames
@@ -143,7 +156,12 @@ class VoicePipeline:
         self.file_mode = isinstance(frames, WavFrames)
         self.frames_seen = 0
         self.clock = clock or (self._audio_clock if self.file_mode else time.monotonic)
+        if clock_ref is not None:
+            clock_ref.fn = self.clock
         self.speaker.clock = self.clock  # 首包时间要和对话时间戳用同一个钟
+        if hasattr(self.responder, "clock"):
+            self.responder.clock = self.clock
+        self.timers = timers
         self.events: queue.Queue[Event] = queue.Queue()
         self.jobs: queue.Queue[tuple[str, Turn, Any] | None] = queue.Queue()
         ring_frames = max(1, int(cfg.dialog.wake_context_seconds / FRAME_SECONDS))
@@ -186,6 +204,9 @@ class VoicePipeline:
         dets = self.detector.process(frame)
         prob = self.vad.process(frame)
         cmds = []
+        if self.timers is not None:
+            for t in self.timers.poll(now):
+                self.events.put(TimerFired(t))
         while True:
             try:
                 ev = self.events.get_nowait()
@@ -298,6 +319,7 @@ class VoicePipeline:
         t0 = time.perf_counter()
         transcript = self.asr.transcribe(turn.audio) if self.asr is not None else Transcript("")
         turn.info["asr_seconds"] = time.perf_counter() - t0
+        turn.info["t_asr_done"] = self.clock()
         turn.info["asr_text"] = transcript.text
         turn.info["asr_lang"] = transcript.language
         self.last_text = transcript.text
@@ -366,8 +388,11 @@ def build_pipeline(
     model_paths: list[str] | None = None,
 ) -> VoicePipeline:
     """按配置把各部件装起来。识别器 / 合成器缺失时降级（只切句不识别 / 只打日志不出声）并警告。"""
+    from catman_io.journal import JournalWriter, build_journal
     from catman_io.tts import create_synthesizer
     from catman_io.tts.speaker import ListOutput, SoundDeviceOutput, WavOutput
+
+    clock_ref = ClockRef()
 
     w = cfg.wakeword
     detector = WakeWordDetector(
@@ -402,6 +427,27 @@ def build_pipeline(
             cfg.audio.output_device, blocksize=cfg.speaker.blocksize, latency=cfg.speaker.latency
         )
     speaker = Speaker(output, volume=cfg.speaker.volume, blocksize=cfg.speaker.blocksize)
+    journal = build_journal(cfg)
+    timers = None
+    if responder is None:
+        from catman_io.responder import build_responder
+
+        responder = build_responder(cfg, speaker=speaker, journal=journal, clock=clock_ref)
+        timers = responder.ctx.timers
+        if tts is not None and hasattr(tts, "prewarm"):
+            threading.Thread(target=_prewarm, args=(tts, responder), name="tts-prewarm", daemon=True).start()
+    user_on_turn = on_turn
+    writer = JournalWriter(journal, cfg) if journal is not None else None
+
+    def on_turn(turn: Turn, status: str) -> None:  # type: ignore[no-redef]
+        if writer is not None:
+            try:
+                writer(turn, status)
+            except Exception:  # noqa: BLE001
+                log.exception("journal write failed for %s", turn.id)
+        if user_on_turn is not None:
+            user_on_turn(turn, status)
+
     stop_source = None
     if input_wav is not None:
         frames: Any = WavFrames(input_wav, channel=cfg.audio.channel)
@@ -418,7 +464,7 @@ def build_pipeline(
         detector=detector,
         vad=vad,
         speaker=speaker,
-        responder=responder or EchoResponder(),
+        responder=responder,
         asr=asr,
         tts=tts,
         on_turn=on_turn,
@@ -426,4 +472,28 @@ def build_pipeline(
         stop_source=stop_source,
         realtime=realtime,
         max_seconds=max_seconds,
+        timers=timers,
+        clock_ref=clock_ref,
     )
+
+
+def _prewarm(tts: Any, responder: Any) -> None:
+    """启动时把固定短语合成进缓存，让规则回复的首包接近零延迟。"""
+    from catman_io import responder as r
+
+    phrases = [ERROR_PHRASE, r.NO_BRAIN_PHRASE, r.BRAIN_ERROR_PHRASE, r.DELEGATED_PHRASE, r.NO_CATMAN_PHRASE]
+    phrases += [
+        "大聲咗。",
+        "細聲咗。",
+        "取消咗。",
+        "而家冇計時緊。",
+        "頭先冇講嘢。",
+        "要計幾耐呀？",
+        "時間到喇",
+    ]
+    try:
+        n = tts.prewarm(phrases)
+        if n:
+            log.info("tts prewarm: %d phrase(s) synthesized", n)
+    except Exception as e:  # noqa: BLE001
+        log.warning("tts prewarm failed: %s", e)

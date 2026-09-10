@@ -68,8 +68,15 @@ def duration_label(seconds: int) -> str:
         return "半個鐘" if h == 0 else f"{'一' if h == 1 else ('兩' if h == 2 else num_cn(h))}個半鐘"
     if seconds % 60 == 0:
         m = seconds // 60
-        return f"{num_cn(m) if m < 100 else m}分鐘"
-    return f"{num_cn(seconds) if seconds < 100 else seconds}秒"
+        return f"{_count(m)}分鐘"
+    return f"{_count(seconds)}秒"
+
+
+def _count(n: int) -> str:
+    """數量詞前的讀法：2 讀「兩」。"""
+    if n == 2:
+        return "兩"
+    return num_cn(n) if n < 100 else str(n)
 
 
 # ---- 动作 ----

@@ -124,17 +124,17 @@ def test_router_shadow_check_runs_in_background(tmp_path, rules):
     seen = []
     done = threading.Event()
 
-    def on_shadow(text, rule_intent, llm_intent):
-        seen.append((text, rule_intent.name, llm_intent.name if llm_intent else None))
+    def on_shadow(text, rule_intent, llm_intent, tag):
+        seen.append((text, rule_intent.name, llm_intent.name if llm_intent else None, tag))
         done.set()
 
     client = FakeClient(tool("date_today"))
     router = IntentRouter(
         store, recognizer(client, rules), shadow_rate=1.0, rng=random.Random(1), on_shadow=on_shadow
     )
-    res = router.route("而家幾點")
+    res = router.route("而家幾點", shadow_tag="turn-1")
     assert res.tier == "rule"
-    assert done.wait(2.0) and seen == [("而家幾點", "time.now", "date.today")]
+    assert done.wait(2.0) and seen == [("而家幾點", "time.now", "date.today", "turn-1")]
 
 
 def test_build_router_needs_key_only_when_enabled(tmp_path, monkeypatch):
