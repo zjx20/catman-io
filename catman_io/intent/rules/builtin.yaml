@@ -1,0 +1,109 @@
+# 随包的内置意图。模式写在归一化后的文本上（无标点、小写、香港繁体）。
+# {tail} = 句尾语气词，{polite} = 句首客气话；{duration} 这类是槽位（见 intent/slots.py）。
+# 现场规则放 data/intent/rules/site.yaml，同名意图会覆盖这里的。
+version: 1
+intents:
+  - name: time.now
+    description: 問而家幾點鐘
+    examples: ["而家幾點", "宜家幾多點呀", "幾點鐘", "而家係幾點", "依家幾點鐘啦", "唔該報時", "現在幾點"]
+    negatives: ["幾點都得", "你幾點放工"]
+    patterns:
+      - "^{polite}(?:而家)?(?:係)?幾(?:多)?點(?:鐘)?{tail}$"
+      - "^{polite}(?:報時|報一下時間|講一下時間|報下時間|而家係咩時間|而家咩時間){tail}$"
+    action: builtin.time
+
+  - name: date.today
+    description: 問今日日期或星期幾
+    examples: ["今日幾號", "今日星期幾", "今日係幾多號", "今日禮拜幾呀", "今日幾月幾號"]
+    patterns:
+      - "^{polite}(?:今日|今天)(?:係)?(?:幾號|幾多號|星期幾|禮拜幾|幾月幾號|乜嘢日子|咩日子){tail}$"
+    action: builtin.date
+
+  - name: timer.set
+    description: 設定倒數計時（幾多分鐘 / 幾多個字之後提醒）
+    slots: {duration: duration}
+    examples:
+      - "幫我set個十分鐘嘅timer"
+      - "三個字之後叫我"
+      - "較個五分鐘嘅鬧鐘"
+      - "設定一個半鐘倒數"
+      - "十五分鐘後提我"
+      - "計時三十秒"
+      - "半個鐘之後提醒我"
+    negatives: ["十分鐘前發生咗乜嘢"]
+    patterns:
+      # 錫 / 舌：識別器常把 set 聽成呢兩個字
+      - "^{polite}(?:set|錫|舌|較|校|設|設定|開|整|起|整個|開個)(?:一)?個?{duration}(?:嘅)?(?:timer|鬧鐘|計時器|計時|倒數|提醒){tail}$"
+      - "^{polite}{duration}(?:之後|後|後面|之后)(?:叫|嗌|提|提醒|提下|通知)(?:我|下我)?{tail}$"
+      - "^{polite}(?:計時|倒數|倒數計時|計){duration}{tail}$"
+    action: builtin.timer
+
+  - name: timer.cancel
+    description: 取消倒數計時
+    examples: ["取消timer", "唔使計時喇", "取消鬧鐘", "停止倒數"]
+    patterns:
+      - "^{polite}(?:取消|唔使|唔要|停止|停|關|熄|刪除)(?:個|嗰個|所有|晒)?(?:timer|鬧鐘|計時器|計時|倒數|提醒){tail}$"
+    action: builtin.timer_cancel
+
+  - name: volume.up
+    description: 音量調大
+    examples: ["大聲啲", "大聲少少", "音量大啲", "開大聲啲"]
+    patterns:
+      - "^{polite}(?:大聲啲|大聲少少|大聲一啲|大聲點|加大聲|音量大啲|開大啲聲|開大聲啲|大聲){tail}$"
+    action: builtin.volume_up
+
+  - name: volume.down
+    description: 音量調細
+    examples: ["細聲啲", "細聲少少", "收細聲", "靜啲啦"]
+    patterns:
+      - "^{polite}(?:細聲啲|細聲少少|細聲一啲|細聲點|收細聲|音量細啲|開細啲聲|靜啲|細聲){tail}$"
+    action: builtin.volume_down
+
+  - name: volume.set
+    description: 音量調到某個百分比
+    slots: {percent: percent}
+    examples: ["音量調到一半", "聲量校到三成", "音量去到50%", "音量最大"]
+    patterns:
+      - "^{polite}(?:音量|聲量|聲)(?:調到|校到|較到|去到|設到|調去|調|校|較|去|開到)?{percent}{tail}$"
+      - "^{polite}(?:調|校|較)?(?:到)?{percent}(?:音量|聲量|聲){tail}$"
+    action: builtin.volume_set
+
+  - name: volume.mute
+    description: 靜音
+    examples: ["靜音", "唔好出聲", "閉嘴"]
+    patterns:
+      - "^{polite}(?:靜音|唔好出聲|閉嘴|唔好嘈|收聲啦){tail}$"
+    action: builtin.mute
+
+  - name: stop
+    description: 停止播放 / 唔使講落去
+    examples: ["停", "唔使講喇", "夠喇", "算喇", "收聲"]
+    patterns:
+      - "^{polite}(?:停|停止|停低|唔使講|唔使講落去|夠喇|夠了|得喇|收聲|收皮|唔使|算喇|算數|唔該晒|唔使喇|夠鐘|ok|得|好喇){tail}$"
+    action: builtin.stop
+    priority: 1
+
+  - name: repeat
+    description: 再講一次
+    examples: ["再講一次", "講多次", "咩話", "你講乜"]
+    patterns:
+      - "^{polite}(?:再講|再講一次|講多次|講多一次|重複|再嚟一次|咩話|吓|再講一遍|你講乜|你講咩|你頭先講乜){tail}$"
+    action: builtin.repeat
+
+  - name: help
+    description: 問識做啲乜
+    examples: ["你識做啲乜嘢", "你有咩功能", "help"]
+    patterns:
+      - "^{polite}(?:你識做乜|你識做啲乜|你識做啲乜嘢|你識做乜嘢|你可以做乜|你有咩功能|有咩功能|你識乜|你可以做啲乜|幫助|help|點用|你係邊個|你係乜嘢){tail}$"
+    action: builtin.help
+
+  - name: weather.query
+    description: 查天氣（今日或某一日）
+    slots: {date: "date?"}
+    examples: ["今日天氣點呀", "聽日會唔會落雨", "出面凍唔凍", "後日天氣如何", "今日幾多度", "聽日要唔要帶遮"]
+    negatives: ["天氣真係好", "我鍾意落雨天"]
+    patterns:
+      - "^{polite}(?:{date})?(?:嘅)?(?:天氣|氣溫|溫度)(?:點|點樣|如何|幾多度|幾度|係點|會點|好唔好){tail}$"
+      - "^{polite}(?:{date})?(?:會唔會|有冇|係唔係)(?:落雨|落大雨|落雪|打風|有雨|好熱|好凍){tail}$"
+      - "^{polite}(?:{date})?(?:出面|外面)?(?:凍唔凍|熱唔熱|冷唔冷|要唔要帶遮|使唔使帶遮|要唔要著多件衫|幾多度|幾度){tail}$"
+    action: builtin.weather

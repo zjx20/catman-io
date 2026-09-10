@@ -1,4 +1,4 @@
-"""命令行：catman-io run | listen | wake | wake-file | asr | say | webdemo | devices | setup"""
+"""命令行：catman-io run | listen | intent | wake | wake-file | asr | say | webdemo | devices | setup"""
 
 from __future__ import annotations
 
@@ -272,6 +272,60 @@ def cmd_run(args) -> int:
     return 0
 
 
+def cmd_intent(args) -> int:
+    """意图规则：parse 一句话 / test 跑回归用例 / lint 自检 / list 列意图。"""
+    import json
+
+    from catman_io.intent import load_rules
+    from catman_io.intent.normalize import normalize
+
+    cfg = Config.load(args.config)
+    rs = load_rules(cfg)
+    if args.sub == "parse":
+        text = " ".join(args.text)
+        print(f"normalized: {normalize(text)}")
+        hits = rs.match_all(text)
+        if not hits:
+            print("rule: (no match)")
+        for i, h in enumerate(hits):
+            mark = "rule:" if i == 0 else "     "
+            print(f"{mark} {h.name} {json.dumps(h.slots, ensure_ascii=False)}  [{h.rule_id}] {h.raw!r}")
+        if args.llm:
+            from catman_io.intent.router import build_router
+
+            router = build_router(cfg, rs)
+            res = router.route(text, use_rules=False)
+            print(f"llm: {res.intent.to_dict() if res.intent else None}  ({res.elapsed_llm:.2f}s)")
+        return 0
+    if args.sub == "lint":
+        errors, warnings = rs.lint()
+        for w in warnings:
+            print(f"warning: {w}")
+        for e in errors:
+            print(f"error: {e}")
+        print(
+            f"{len(rs.intents)} intents, {len(rs.rules)} patterns, "
+            f"{len(errors)} error(s), {len(warnings)} warning(s)"
+        )
+        return 1 if errors else 0
+    if args.sub == "test":
+        from catman_io.intent.cases import evaluate, read_cases
+
+        errors, _ = rs.lint()
+        for e in errors:
+            print(f"lint error: {e}")
+        cases = read_cases(args.cases or cfg.cases_path)
+        report = evaluate(rs, cases)
+        print(report.format())
+        return 0 if report.ok and not errors else 1
+    if args.sub == "list":
+        for spec in rs.intents.values():
+            slots = " ".join(f"{{{k}:{v}}}" for k, v in spec.slots.items())
+            print(f"{spec.name:<16} {slots:<24} {spec.description}  ({len(spec.patterns)} patterns)")
+        return 0
+    return 2
+
+
 def cmd_say(args) -> int:
     """合成一段粤语并播放（或写 WAV），顺带看首句延迟。"""
     import numpy as np
@@ -405,6 +459,18 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-tts", action="store_true", help="不合成不出声，只打日志")
     p.add_argument("--no-asr", action="store_true", help="不识别（只验证唤醒与切句）")
     p.set_defaults(fn=cmd_run)
+
+    p = sub.add_parser("intent", help="意图规则：parse 一句话 / test 回归用例 / lint 自检 / list")
+    p.add_argument("-c", "--config", type=Path, help="YAML 配置")
+    ip = p.add_subparsers(dest="sub", required=True)
+    q = ip.add_parser("parse", help="看一句话命中哪条规则")
+    q.add_argument("text", nargs="+")
+    q.add_argument("--llm", action="store_true", help="也问一次 LLM（需要配置 intent.llm）")
+    ip.add_parser("lint", help="检查规则文件：例句必须命中、模式合法")
+    q = ip.add_parser("test", help="用回归用例跑规则")
+    q.add_argument("--cases", type=Path, help="用例文件（默认配置里的）")
+    ip.add_parser("list", help="列出意图")
+    p.set_defaults(fn=cmd_intent)
 
     p = sub.add_parser("say", help="合成一段粤语并播放（-o 写成 WAV），测试 TTS 与扬声器")
     p.add_argument("text", nargs="+")
