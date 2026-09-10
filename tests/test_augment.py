@@ -12,6 +12,7 @@ from training.wakeword.augment import (
     mix_at_snr,
     rms,
     speed_perturb,
+    time_stretch,
     to_int16,
 )
 from training.wakeword.config import AugmentConfig
@@ -80,6 +81,50 @@ def test_speed_perturb_changes_length():
     assert speed_perturb(x, 1.0) is x
     assert abs(len(speed_perturb(x, 1.1)) - len(x) / 1.1) < 2
     assert abs(len(speed_perturb(x, 0.9)) - len(x) / 0.9) < 2
+
+
+def test_time_stretch_keeps_pitch_and_scales_length():
+    t = np.arange(SR) / SR
+    x = (0.5 * np.sin(2 * np.pi * 220 * t) + 0.2 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
+    assert time_stretch(x, 1.0) is x
+    for factor in (0.8, 1.3, 1.6, 2.0):
+        y = time_stretch(x, factor)
+        assert y.dtype == np.float32
+        assert abs(len(y) - len(x) / factor) < 2
+        # 音高不变：基频峰仍在 220 Hz（重采样变速会挪到 220×factor）
+        spectrum = np.abs(np.fft.rfft(y))
+        peak_hz = np.fft.rfftfreq(len(y), 1 / SR)[spectrum.argmax()]
+        assert abs(peak_hz - 220) < 5, (factor, peak_hz)
+        # 能量基本不变（叠加窗已归一化）
+        assert abs(rms(y) - rms(x)) / rms(x) < 0.05
+    # 太短的片段原样返回
+    short = x[:300]
+    assert time_stretch(short, 1.5) is short
+
+
+def test_augmenter_tempo_only_shortens_positive():
+    cfg = AugmentConfig(
+        clip_seconds=2.0,
+        p_tempo=1.0,
+        tempo_range=[1.5, 1.5],
+        p_speed=0.0,
+        p_rir=0.0,
+        p_background=0.0,
+        p_babble=0.0,
+        p_colored_noise=0.0,
+        p_bandstop=0.0,
+        p_lowpass=0.0,
+        p_distortion=0.0,
+        peak_range=[1.0, 1.0],
+        end_jitter=0.0,
+    )
+    aug = Augmenter(cfg, seed=0)
+    x = tone(1.0)
+    out = aug(x, True)
+    nz = np.nonzero(np.abs(out) > 1e-4)[0]
+    # 右对齐，且有声部分约为原来的 1/1.5
+    assert nz[-1] >= 2 * SR - 2
+    assert abs((nz[-1] - nz[0]) - SR / 1.5) < 0.02 * SR
 
 
 def test_audio_pool_segments():

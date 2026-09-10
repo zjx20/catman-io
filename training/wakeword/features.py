@@ -69,14 +69,14 @@ def compute_features(
 
 # ---------------------------------------------------------------- 样本来源
 class Sample:
-    __slots__ = ("path", "positive", "weight", "kind", "text")
+    __slots__ = ("path", "positive", "weight", "kind", "text", "rate")
 
-    def __init__(self, path: Path, positive: bool, weight: int = 1, kind: str = "", text: str = ""):
+    def __init__(
+        self, path: Path, positive: bool, weight: int = 1, kind: str = "", text: str = "", rate: str = ""
+    ):
         self.path, self.positive, self.weight = path, positive, weight
-        self.kind, self.text = (
-            kind,
-            text,
-        )  # 来源类别（positive/adversarial/general/extra）与文本，仅用于评估报告
+        # 来源类别（positive/adversarial/general/extra）、文本与 TTS 语速，仅用于评估报告
+        self.kind, self.text, self.rate = kind, text, rate
 
 
 def extra_dir_samples(
@@ -98,7 +98,9 @@ def gather_samples(cfg: TrainingConfig, records: list[ClipRecord]) -> dict[tuple
     }
     for r in records:
         lb = "positive" if r.is_positive else "negative"
-        groups[(lb, r.split)].append(Sample(cfg.clips_dir / r.wav, r.is_positive, kind=r.label, text=r.text))
+        groups[(lb, r.split)].append(
+            Sample(cfg.clips_dir / r.wav, r.is_positive, kind=r.label, text=r.text, rate=r.rate)
+        )
     for split, samples in extra_dir_samples(
         cfg.data.extra_positive_dirs, True, cfg.data.val_fraction, 3
     ).items():

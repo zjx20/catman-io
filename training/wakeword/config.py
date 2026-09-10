@@ -83,8 +83,12 @@ class AugmentConfig:
     # 房间冲激响应目录；留空且 download_rirs=true 时自动下载 MIT 的 270 条 RIR
     rir_dirs: list[str] = field(default_factory=list)
     download_rirs: bool = True
+    # 重采样变速（同时变调）
     speed_factors: list[float] = field(default_factory=lambda: [0.9, 1.0, 1.1])
     p_speed: float = 0.5
+    # WSOLA 变速不变调，倍率在区间内均匀采样（>1 变快）；正负样本都做，让"快"本身不成为唤醒线索
+    tempo_range: list[float] = field(default_factory=lambda: [0.9, 1.6])
+    p_tempo: float = 0.5
     snr_db: list[float] = field(default_factory=lambda: [-5.0, 20.0])
     p_background: float = 0.75
     p_colored_noise: float = 0.3

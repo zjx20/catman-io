@@ -3,6 +3,10 @@
 思路沿用 openWakeWord 的训练脚本：把每条 TTS 短句放进固定长度（默认 2 秒）的窗口里，
 正样本**右对齐**（唤醒词刚说完就是模型该触发的时刻），再随机叠加环境噪声、人声嘈杂、
 有色噪声、房间混响、滤波、失真和音量变化。
+
+语速有两种扰动：``speed_perturb`` 是重采样（变速同时变调，像磁带快放），``time_stretch`` 是
+WSOLA 变速不变调（音高不动、只压缩时长，更接近真人说得快）。真人快说「小貓人」只有半秒左右，
+而 TTS 正常语速接近一秒，所以正负样本都要往快里拉，负样本也拉是为了不让"快"本身成为唤醒的线索。
 """
 
 from __future__ import annotations
@@ -160,6 +164,43 @@ def speed_perturb(x: np.ndarray, factor: float) -> np.ndarray:
     return resample_poly(x, 100, int(round(100 * factor))).astype(np.float32)
 
 
+def time_stretch(
+    x: np.ndarray, factor: float, frame: int = 512, hop: int = 128, tolerance: int = 192
+) -> np.ndarray:
+    """WSOLA 变速不变调：factor>1 变快变短，音高与音色不变。
+
+    以 hop 为合成步长、hop×factor 为分析步长切帧（frame 长、汉宁窗）叠加；每帧在名义位置 ±tolerance
+    内搜索与上一帧自然延续最相关的起点，避免拼接处相位断裂。16 kHz 下默认 32 ms 帧、8 ms 步长、
+    ±12 ms 搜索（大于一个男声基频周期）。
+    """
+    if abs(factor - 1.0) < 1e-3 or len(x) <= frame:
+        return x
+    x = x.astype(np.float32)
+    n_out = int(round(len(x) / factor))
+    window = np.hanning(frame + 1)[:-1].astype(np.float32)
+    pad = tolerance + frame + hop
+    xp = np.concatenate([np.zeros(pad, np.float32), x, np.zeros(pad, np.float32)])
+    n_frames = max(1, int(np.ceil(n_out / hop)))
+    out = np.zeros(n_frames * hop + frame, np.float32)
+    norm = np.zeros_like(out)
+    prev = pad
+    for k in range(n_frames):
+        nominal = pad + int(round(k * hop * factor))
+        if k == 0:
+            start = nominal
+        else:
+            target = xp[prev + hop : prev + hop + frame]  # 上一帧按原速往下走会到的地方
+            lo = nominal - tolerance
+            cands = np.lib.stride_tricks.sliding_window_view(xp[lo : nominal + tolerance + frame], frame)
+            start = lo + int(np.argmax(cands @ target))
+        pos = k * hop
+        out[pos : pos + frame] += xp[start : start + frame] * window
+        norm[pos : pos + frame] += window
+        prev = start
+    out = out / np.maximum(norm, 1e-3)
+    return out[:n_out].astype(np.float32)
+
+
 def fit_clip(
     x: np.ndarray, total: int, rng: np.random.Generator, end_jitter: float = 0.2, align: str = "right"
 ) -> np.ndarray:
@@ -249,6 +290,8 @@ class Augmenter:
     def __call__(self, x: np.ndarray, positive: bool) -> np.ndarray:
         cfg, rng = self.cfg, self.rng
         x = x.astype(np.float32)
+        if rng.random() < cfg.p_tempo:
+            x = time_stretch(x, float(rng.uniform(*cfg.tempo_range)))
         if rng.random() < cfg.p_speed:
             x = speed_perturb(x, float(rng.choice(cfg.speed_factors)))
         # 负样本一半右对齐（"小貓"刚说完这种最容易混的对齐），一半随机位置

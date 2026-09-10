@@ -2,7 +2,9 @@
 
 1. 逐条流式跑验证集音频（用 openwakeword.Model.predict_clip，和线上完全一样的特征流水线），
    分别在"干净"和"增强后"的片段上算各阈值下的召回率 / 负样本误接受率；
-2. 在 11 小时通用音频特征上算每小时误唤醒次数（上升沿计数）。
+2. 快语速压力测试：把干净片段用 WSOLA 变速不变调压到 1.25～2 倍速（音高不变，只是说得快），
+   看召回掉多少——真人快说「小貓人」大约只有半秒，比 TTS 正常语速快一倍；
+3. 在 11 小时通用音频特征上算每小时误唤醒次数（上升沿计数）。
 结果写到 <export_dir>/eval.json，同时打印一张表，方便选阈值。
 """
 
@@ -14,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .augment import to_int16
+from .augment import time_stretch, to_int16
 from .config import TrainingConfig
 from .features import build_augmenter, gather_samples, load_sample_audio
 from .model import onnx_predictor
@@ -23,6 +25,8 @@ from .tts import read_manifest
 log = logging.getLogger(__name__)
 
 THRESHOLDS = (0.3, 0.5, 0.7, 0.9)
+# 快语速压力测试的倍速（相对片段本身的语速；音高不变）
+FAST_TEMPOS = (1.25, 1.5, 1.75, 2.0)
 FRAME_SECONDS = 0.08
 
 
@@ -94,10 +98,16 @@ def run_evaluation(
         "clean": (pos_audio, neg_audio),
         "augmented": ([augmenter(x, True) for x in pos_audio], [augmenter(x, False) for x in neg_audio]),
     }
+    for tempo in FAST_TEMPOS:
+        sets[f"fast_x{tempo}"] = (
+            [time_stretch(x, tempo) for x in pos_audio],
+            [time_stretch(x, tempo) for x in neg_audio],
+        )
     for name, (p_audio, n_audio) in sets.items():
         ps = clip_scores(model_path, [to_int16(x) for x in p_audio])
         ns = clip_scores(model_path, [to_int16(x) for x in n_audio])
         kinds = sorted({s.kind for s in neg})
+        rates = sorted({s.rate for s in pos if s.rate}, key=_rate_key)
         result[name] = {
             "n_positive": len(ps),
             "n_negative": len(ns),
@@ -107,7 +117,12 @@ def run_evaluation(
                 k: round(float(np.mean([sc >= 0.5 for s, sc in zip(neg, ns, strict=True) if s.kind == k])), 4)
                 for k in kinds
             },
+            "recall_by_rate@0.5": {
+                r: round(float(np.mean([sc >= 0.5 for s, sc in zip(pos, ps, strict=True) if s.rate == r])), 4)
+                for r in rates
+            },
             "positive_score_p10": round(float(np.percentile(ps, 10)), 4),
+            "positive_score_median": round(float(np.median(ps)), 4),
             "negative_score_p99": round(float(np.percentile(ns, 99)), 4),
         }
         if name == "clean":
@@ -130,14 +145,32 @@ def run_evaluation(
     return result
 
 
+def _rate_key(rate: str) -> float:
+    try:
+        return float(rate.rstrip("%"))
+    except ValueError:
+        return 0.0
+
+
 def format_report(r: dict) -> str:
-    lines = [f"model: {r['model']}", "", f"{'set':<10}{'thr':>6}{'recall':>9}{'false-accept':>14}"]
+    lines = [f"model: {r['model']}", "", f"{'set':<11}{'thr':>6}{'recall':>9}{'false-accept':>14}"]
     for name in ("clean", "augmented"):
         if name not in r:
             continue
         for t in THRESHOLDS:
             lines.append(
-                f"{name:<10}{t:>6}{r[name][f'recall@{t}']:>9.3f}{r[name][f'false_accept@{t}']:>14.3f}"
+                f"{name:<11}{t:>6}{r[name][f'recall@{t}']:>9.3f}{r[name][f'false_accept@{t}']:>14.3f}"
+            )
+    fast = [f"fast_x{t}" for t in FAST_TEMPOS if f"fast_x{t}" in r]
+    if fast:
+        lines.append("")
+        lines.append("fast-speech stress test (clean clips time-stretched, pitch kept):")
+        lines.append(f"{'set':<11}{'recall@.3':>10}{'recall@.5':>10}{'recall@.7':>10}{'median':>8}{'fa@.5':>8}")
+        for name in fast:
+            m = r[name]
+            lines.append(
+                f"{name:<11}{m['recall@0.3']:>10.3f}{m['recall@0.5']:>10.3f}{m['recall@0.7']:>10.3f}"
+                f"{m['positive_score_median']:>8.3f}{m['false_accept@0.5']:>8.3f}"
             )
     if "clean" in r:
         by_kind = r["clean"]["false_accept_by_kind@0.5"]
@@ -145,6 +178,11 @@ def format_report(r: dict) -> str:
         lines.append(
             "false-accept@0.5 by negative kind: " + ", ".join(f"{k} {v:.3f}" for k, v in by_kind.items())
         )
+        by_rate = r["clean"].get("recall_by_rate@0.5", {})
+        if by_rate:
+            lines.append(
+                "clean recall@0.5 by TTS rate: " + ", ".join(f"{k} {v:.3f}" for k, v in by_rate.items())
+            )
     if r.get("top_false_accepts"):
         top = "; ".join(f"{d['text']} ({d['score']:.2f})" for d in r["top_false_accepts"][:8])
         lines.append("most accepted negatives: " + top)
