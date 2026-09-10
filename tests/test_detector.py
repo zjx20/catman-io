@@ -52,7 +52,7 @@ def test_cooldown_and_patience(base_models, tiny_model):
 
 @pytest.mark.skipif(not bundled_models(), reason="no bundled wake-word model")
 def test_bundled_model_on_sample_clips(base_models):
-    """随包模型应该认出合成的「小貓人」，并且不被静音 / 「小貓」/ 日常句子触发。"""
+    """随包模型应该认出合成的「小貓人」（正常语速和 +100% 快语速），并且不被静音 / 「小貓」/ 日常句子触发。"""
     from pathlib import Path
 
     from catman_io.audio.frames import read_wav
@@ -64,7 +64,9 @@ def test_bundled_model_on_sample_clips(base_models):
         return np.concatenate([silence, read_wav(data / name), silence])
 
     det = WakeWordDetector(threshold=0.5)
-    assert det.process_audio(padded("positive_siu_maau_jan_hiugaai.wav")), "should detect the wake word"
+    for name in ("positive_siu_maau_jan_hiugaai.wav", "positive_siu_maau_jan_fast_wanlung.wav"):
+        det.reset()
+        assert det.process_audio(padded(name)), f"should detect the wake word in {name}"
     for name in ("negative_siu_maau_hiugaai.wav", "negative_weather_wanlung.wav"):
         det.reset()
         assert det.process_audio(padded(name)) == [], f"should not trigger on {name}"

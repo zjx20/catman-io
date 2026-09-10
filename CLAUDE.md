@@ -40,6 +40,8 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
 - 唤醒词模型文件名就是 openWakeWord 里的模型名（`siu_maau_jan.onnx` → `Detection.model="siu_maau_jan"`），
   旁边同名 `.json` 记录训练数据、评估结果和配置。正样本训练时右对齐到 2 秒窗口末尾，所以 `phrases.py` 里
   正样本只能加前缀不能加后缀；负样本文本绝不能包含唤醒词（`tests/test_phrases.py` 守着）。
+  快语速靠 TTS 合成到 +100%；`augment.time_stretch`（WSOLA 变速不变调）只用在 `evaluate` 的快语速压力测试里，
+  训练时 `p_tempo` 保持 0（实测拿它增强训练集会拖低正常语速的召回）。
 - **线程模型**（`pipeline.py`）：主线程跑帧循环，每帧过唤醒检测与 VAD，喂 `dialog.Dialog`（纯状态机，只有主线程碰）
   并执行它吐出的命令；worker 线程做识别 / 应答 / 合成，通过事件队列汇报；Speaker 自带写线程；API 在自己的 loop 线程。
   回合有 `gen` 代号与 `cancelled` 标志，`speaker.say(pcm, gen)` 丢弃过期回合的音频——打断靠这个，别绕过它。
