@@ -60,7 +60,7 @@ def load_rules(cfg: Config) -> RuleSet:
 def rule_store(cfg: Config) -> RuleStore:
     from .rules import RuleStore
 
-    return RuleStore(rule_paths(cfg), rooms=cfg.intent.context.rooms or None)
+    return RuleStore(BUILTIN_RULES, cfg.rules_dir, rooms=cfg.intent.context.rooms or None)
 
 
 __all__ = ["BUILTIN_RULES", "Intent", "IntentRecognizer", "load_rules", "rule_paths", "rule_store"]

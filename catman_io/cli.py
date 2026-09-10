@@ -261,7 +261,10 @@ def cmd_run(args) -> int:
         on_status=status,
         on_turn=on_turn,
         model_paths=args.models,
+        api=not args.no_api and args.wav is None,
     )
+    if pipe.api is not None:
+        print(f"api: http://{cfg.api.host}:{cfg.api.port}/api/health  (token: {cfg.api_token_path})")
     if args.wav is None:
         print("running; say the wake word (Ctrl-C to stop)")
     try:
@@ -383,6 +386,43 @@ def cmd_journal(args) -> int:
             print(f"wrote {write_markdown(review, args.output)} ({review['count']} turn(s))")
         else:
             print(render_markdown(review))
+        return 0
+    return 2
+
+
+def cmd_flywheel(args) -> int:
+    """飞轮：export 导出复盘 / nudge 叫 catman 来处理 / ack 记下看到哪里。"""
+    from catman_io.journal import Journal
+    from catman_io.journal.review import build_review, write_ack, write_markdown
+
+    cfg = Config.load(args.config)
+    journal = Journal(cfg.journal_dir, save_audio=False, keep_days=0)
+    if args.sub == "export":
+        from catman_io.intent import load_rules
+
+        intents = {name: spec.description for name, spec in load_rules(cfg).intents.items()}
+        since = _parse_since(args.since)
+        review = build_review(journal, since=since, include_acked=args.all, intents=intents)
+        out = args.output or cfg.journal_dir / f"review-{time.strftime('%Y%m%d')}.md"
+        print(f"wrote {write_markdown(review, out)} ({review['count']} turn(s), until={review['until']})")
+        return 0
+    if args.sub == "ack":
+        write_ack(journal, args.until)
+        print(f"acked until {args.until}")
+        return 0
+    if args.sub == "nudge":
+        from catman_io.brain.catman import build_catman
+
+        catman = build_catman(cfg)
+        if catman is None:
+            print("brain.catman.base_url is not configured", file=sys.stderr)
+            return 1
+        message = args.message or (
+            "請按 catman-io 技能處理最新嘅語音意圖 bad case"
+            "（拉複盤、改 site.yaml、跑回歸、寫回、ack），完成後簡短匯報。"
+        )
+        catman.post(message)
+        print("nudged catman")
         return 0
     return 2
 
@@ -519,6 +559,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--status", action="store_true", help="--wav 时也打印状态行")
     p.add_argument("--no-tts", action="store_true", help="不合成不出声，只打日志")
     p.add_argument("--no-asr", action="store_true", help="不识别（只验证唤醒与切句）")
+    p.add_argument("--no-api", action="store_true", help="不开本机 HTTP API")
     p.set_defaults(fn=cmd_run)
 
     p = sub.add_parser("intent", help="意图规则：parse 一句话 / test 回归用例 / lint 自检 / list")
@@ -548,6 +589,19 @@ def main(argv: list[str] | None = None) -> int:
     q.add_argument("--all", action="store_true", help="包括已经 ack 过的")
     q.add_argument("-o", "--output", type=Path, help="写到文件")
     p.set_defaults(fn=cmd_journal)
+
+    p = sub.add_parser("flywheel", help="意图飞轮：export 复盘 / nudge 叫 catman / ack")
+    p.add_argument("-c", "--config", type=Path, help="YAML 配置")
+    fp = p.add_subparsers(dest="sub", required=True)
+    q = fp.add_parser("export", help="把 bad case 复盘写成 Markdown")
+    q.add_argument("--since", help="1d / 12h 或 YYYY-MM-DD")
+    q.add_argument("--all", action="store_true", help="包括已经 ack 过的")
+    q.add_argument("-o", "--output", type=Path)
+    q = fp.add_parser("ack", help="记下复盘看到哪里（时间戳）")
+    q.add_argument("until", type=float)
+    q = fp.add_parser("nudge", help="往 catman 发一句话，叫它按技能处理 bad case")
+    q.add_argument("-m", "--message")
+    p.set_defaults(fn=cmd_flywheel)
 
     p = sub.add_parser("say", help="合成一段粤语并播放（-o 写成 WAV），测试 TTS 与扬声器")
     p.add_argument("text", nargs="+")

@@ -266,18 +266,27 @@ def _compile(spec: IntentSpec, index: int, raw: str, types: dict[str, SlotType])
 
 
 class RuleStore:
-    """持有当前 RuleSet；文件变了就重新加载（解析失败保留旧的）；API 可以整体替换。"""
+    """持有当前 RuleSet：builtin + 现场目录里的 *.yaml（按名字排序，同名意图后者覆盖）。
+    目录里文件的增删改都能被 ``reload_if_changed`` 发现；解析或 lint 失败就保留旧的；API 可以整体替换。"""
 
-    def __init__(self, paths: Sequence[Path], *, rooms: list[str] | None = None):
-        self.paths = [Path(p) for p in paths]
+    def __init__(self, builtin: Path, site_dir: Path, *, rooms: list[str] | None = None):
+        self.builtin = Path(builtin)
+        self.site_dir = Path(site_dir)
         self.rooms = rooms
         self._lock = threading.Lock()
         self._stamp: tuple[tuple[str, int, int], ...] = ()
-        self.current = RuleSet.load(self._existing(), rooms=rooms)
+        self.current = RuleSet.load(self.paths, rooms=rooms)
         self._stamp = self._current_stamp()
 
-    def _existing(self) -> list[Path]:
-        return [p for p in self.paths if p.exists()]
+    @property
+    def site_files(self) -> list[Path]:
+        if not self.site_dir.exists():
+            return []
+        return sorted(p for p in self.site_dir.glob("*.yaml") if p.is_file())
+
+    @property
+    def paths(self) -> list[Path]:
+        return [self.builtin] + self.site_files
 
     def _current_stamp(self) -> tuple[tuple[str, int, int], ...]:
         out = []
@@ -289,6 +298,24 @@ class RuleStore:
                 out.append((str(p), 0, 0))
         return tuple(out)
 
+    def load_candidate(self, override: dict[str, str] | None = None) -> RuleSet:
+        """按当前文件（可用 {文件名: YAML 文本} 覆盖或新增）建一个 RuleSet，不替换当前的。"""
+        override = override or {}
+        docs: list[tuple[str, dict[str, Any]]] = []
+        names = {p.name: p for p in self.site_files}
+        for name in override:
+            names.setdefault(name, self.site_dir / name)
+        with open(self.builtin, encoding="utf-8") as f:
+            docs.append((str(self.builtin), yaml.safe_load(f) or {}))
+        for name in sorted(names):
+            if name in override:
+                doc = yaml.safe_load(override[name]) or {}
+            else:
+                with open(names[name], encoding="utf-8") as f:
+                    doc = yaml.safe_load(f) or {}
+            docs.append((str(names[name]), doc))
+        return RuleSet.from_docs(docs, rooms=self.rooms)
+
     def reload_if_changed(self) -> bool:
         stamp = self._current_stamp()
         if stamp == self._stamp:
@@ -297,7 +324,7 @@ class RuleStore:
             if stamp == self._stamp:
                 return False
             try:
-                rs = RuleSet.load(self._existing(), rooms=self.rooms)
+                rs = self.load_candidate()
                 errors, _ = rs.lint()
                 if errors:
                     raise RuleError("; ".join(errors[:3]))

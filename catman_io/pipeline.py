@@ -138,6 +138,7 @@ class VoicePipeline:
         max_seconds: float | None = None,
         timers: Any = None,
         clock_ref: ClockRef | None = None,
+        api: Any = None,
     ):
         self.cfg = cfg
         self.frames = frames
@@ -162,6 +163,7 @@ class VoicePipeline:
         if hasattr(self.responder, "clock"):
             self.responder.clock = self.clock
         self.timers = timers
+        self.api = api  # ApiServer，run() 时启动、结束时停
         self.events: queue.Queue[Event] = queue.Queue()
         self.jobs: queue.Queue[tuple[str, Turn, Any] | None] = queue.Queue()
         ring_frames = max(1, int(cfg.dialog.wake_context_seconds / FRAME_SECONDS))
@@ -179,8 +181,19 @@ class VoicePipeline:
         if self.stop_source is not None:
             self.stop_source()
 
+    def status(self) -> dict[str, Any]:
+        return {
+            "state": self.dialog.state.value,
+            "turns": self.turns_done,
+            "last_text": self.last_text,
+            "frames": self.frames_seen,
+            "dropped": getattr(self.frames, "dropped", None),
+        }
+
     def run(self) -> None:
         self._worker.start()
+        if self.api is not None:
+            self.api.start()
         try:
             for frame in self.frames:
                 if self._stop.is_set():
@@ -261,6 +274,8 @@ class VoicePipeline:
         self._worker.join(timeout=5.0)
         self.speaker.wait(timeout=2.0)
         self.speaker.close()
+        if self.api is not None:
+            self.api.stop()
 
     # ---- worker 线程 ----
 
@@ -386,6 +401,7 @@ def build_pipeline(
     on_status: Callable[[str], None] | None = None,
     on_turn: Callable[[Turn, str], None] | None = None,
     model_paths: list[str] | None = None,
+    api: bool = False,
 ) -> VoicePipeline:
     """按配置把各部件装起来。识别器 / 合成器缺失时降级（只切句不识别 / 只打日志不出声）并警告。"""
     from catman_io.journal import JournalWriter, build_journal
@@ -458,7 +474,7 @@ def build_pipeline(
         mic = MicCapture(device=a.device, channel=a.channel, sample_rate=a.sample_rate).start()
         frames = mic.frames()
         stop_source = mic.stop
-    return VoicePipeline(
+    pipe = VoicePipeline(
         cfg,
         frames=frames,
         detector=detector,
@@ -475,6 +491,21 @@ def build_pipeline(
         timers=timers,
         clock_ref=clock_ref,
     )
+    if api and cfg.api.enabled and hasattr(responder, "router"):
+        try:
+            from catman_io.api import ApiServer, make_app, resolve_api_token
+
+            app = make_app(
+                cfg=cfg,
+                store=responder.router.store,
+                journal=journal,
+                token=resolve_api_token(cfg),
+                status=pipe.status,
+            )
+            pipe.api = ApiServer(app, cfg.api.host, cfg.api.port)
+        except ImportError as e:
+            log.warning("api disabled: %s (pip install 'catman-io[demo]')", e)
+    return pipe
 
 
 def _prewarm(tts: Any, responder: Any) -> None:
