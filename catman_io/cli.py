@@ -1,4 +1,4 @@
-"""命令行：catman-io devices | setup | wake | wake-file | webdemo | listen | asr"""
+"""命令行：catman-io devices | setup | wake | wake-file | webdemo | listen | asr | say"""
 
 from __future__ import annotations
 
@@ -243,6 +243,64 @@ def cmd_listen(args) -> int:
     return 0
 
 
+def cmd_say(args) -> int:
+    """合成一段粤语并播放（或写 WAV），顺带看首句延迟。"""
+    import numpy as np
+
+    from catman_io.tts import clean_for_speech, create_synthesizer, split_sentences
+
+    cfg = Config.load(args.config)
+    if args.voice:
+        cfg.tts.voice = args.voice
+    if args.rate:
+        cfg.tts.rate = args.rate
+    if args.pitch:
+        cfg.tts.pitch = args.pitch
+    tts = create_synthesizer(cfg)
+    if tts is None:
+        print("tts.backend is 'none'", file=sys.stderr)
+        return 1
+    text = clean_for_speech(" ".join(args.text))
+    sentences = split_sentences(text)
+    if not sentences:
+        print("nothing to say", file=sys.stderr)
+        return 1
+    speaker = None
+    if args.output is None:
+        from catman_io.tts.speaker import SoundDeviceOutput, Speaker
+
+        speaker = Speaker(
+            SoundDeviceOutput(cfg.audio.output_device, blocksize=cfg.speaker.blocksize, latency=cfg.speaker.latency),
+            volume=cfg.speaker.volume,
+            blocksize=cfg.speaker.blocksize,
+        )
+        speaker.set_gen(1)
+    pieces = []
+    t_start = time.perf_counter()
+    for i, s in enumerate(sentences):
+        pcm = tts.synthesize(s)
+        stamp = f"+{time.perf_counter() - t_start:5.2f}s"
+        cached = " (cached)" if getattr(tts, "last_fetch_seconds", 1.0) == 0.0 else ""
+        print(f"{stamp} {len(pcm) / 16000:5.2f}s audio{cached}: {s}")
+        if speaker is not None:
+            speaker.say(pcm, gen=1)
+        else:
+            pieces.append(pcm)
+    if speaker is not None:
+        speaker.wait()
+        speaker.close()
+    else:
+        import wave
+
+        with wave.open(str(args.output), "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(16000)
+            w.writeframes(np.concatenate(pieces).tobytes())
+        print(f"wrote {args.output}")
+    return 0
+
+
 def cmd_webdemo(args) -> int:
     from catman_io.webdemo.server import run
 
@@ -306,6 +364,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-asr", action="store_true", help="只切句不识别")
     p.add_argument("--max-seconds", type=float, default=None, help="--wav 时最多跑多少秒")
     p.set_defaults(fn=cmd_listen)
+
+    p = sub.add_parser("say", help="合成一段粤语并播放（-o 写成 WAV），测试 TTS 与扬声器")
+    p.add_argument("text", nargs="+")
+    p.add_argument("-c", "--config", type=Path, help="YAML 配置")
+    p.add_argument("-o", "--output", type=Path, help="不播放，写到这个 WAV")
+    p.add_argument("--voice", help="覆盖 tts.voice，例如 zh-HK-WanLungNeural")
+    p.add_argument("--rate", help="语速，例如 +10%%")
+    p.add_argument("--pitch", help="音高，例如 -20Hz")
+    p.set_defaults(fn=cmd_say)
 
     p = sub.add_parser("webdemo", help="网页版测试：浏览器麦克风实时看唤醒词命中，并可保存录音做训练样本")
     _add_wake_args(p)
