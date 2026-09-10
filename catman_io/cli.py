@@ -1,4 +1,4 @@
-"""命令行：catman-io devices | setup | wake | wake-file | webdemo | listen | asr | say"""
+"""命令行：catman-io run | listen | wake | wake-file | asr | say | webdemo | devices | setup"""
 
 from __future__ import annotations
 
@@ -136,26 +136,6 @@ def cmd_wake_file(args) -> int:
     return 0 if dets or not args.expect else 1
 
 
-class _WavFrames:
-    """离线测试用：把 WAV 切成帧，末尾补几秒静音让端点器能收口，之后一直给静音直到调用方停。"""
-
-    def __init__(self, path: Path, channel: int = 0, tail_seconds: float = 3.0):
-        self.path, self.channel, self.tail_seconds = path, channel, tail_seconds
-        self.exhausted = False  # 文件里的音频（含补的静音）已经喂完
-
-    def __iter__(self):
-        import numpy as np
-
-        from catman_io.audio.frames import FRAME_SAMPLES, iter_frames, read_wav
-
-        audio = read_wav(self.path, channel=self.channel)
-        tail = np.zeros(int(self.tail_seconds * 16000), dtype=np.int16)
-        yield from iter_frames(np.concatenate([audio, tail]))
-        self.exhausted = True
-        while True:
-            yield np.zeros(FRAME_SAMPLES, dtype=np.int16)
-
-
 def cmd_listen(args) -> int:
     """唤醒 → 端点检测 → 存整句 WAV → 识别。在设备上验证前半段管线用。"""
     import wave
@@ -182,7 +162,9 @@ def cmd_listen(args) -> int:
     mic = None
     wav_frames = None
     if args.wav:
-        wav_frames = _WavFrames(args.wav, channel=args.channel or 0)
+        from catman_io.pipeline import WavFrames
+
+        wav_frames = WavFrames(args.wav, channel=args.channel or 0)
         frames = iter(wav_frames)
         clock = lambda: frames_seen * FRAME_SECONDS  # noqa: E731
         max_frames = int(args.max_seconds / FRAME_SECONDS) if args.max_seconds else None
@@ -243,6 +225,53 @@ def cmd_listen(args) -> int:
     return 0
 
 
+def cmd_run(args) -> int:
+    """整条管线：唤醒 → 聆听 → 识别 → 应答 → 播报。"""
+    from catman_io.pipeline import build_pipeline
+
+    cfg = Config.load(args.config)
+    if args.threshold is not None:
+        cfg.wakeword.threshold = args.threshold
+    if args.device is not None:
+        cfg.audio.device = args.device
+    if args.channel is not None:
+        cfg.audio.channel = args.channel
+    if args.no_tts:
+        cfg.tts.backend = "none"
+    if args.no_asr:
+        cfg.asr.backend = "none"
+    quiet = args.wav is not None and not args.status
+
+    def status(line: str) -> None:
+        if not quiet:
+            sys.stdout.write(f"\r{line[:100]:<100}")
+            sys.stdout.flush()
+
+    def on_turn(turn, st: str) -> None:
+        text = turn.info.get("asr_text", "")
+        reply = turn.info.get("reply_text", "")
+        sys.stdout.write(f"\n[{time.strftime('%H:%M:%S')}] {st:<9} 「{text}」 → 「{reply}」\n")
+
+    pipe = build_pipeline(
+        cfg,
+        input_wav=args.wav,
+        output_wav=args.out,
+        realtime=args.realtime,
+        max_seconds=args.max_seconds,
+        on_status=status,
+        on_turn=on_turn,
+        model_paths=args.models,
+    )
+    if args.wav is None:
+        print("running; say the wake word (Ctrl-C to stop)")
+    try:
+        pipe.run()
+    except KeyboardInterrupt:
+        pipe.stop()
+    print(f"\n{pipe.turns_done} turn(s)")
+    return 0
+
+
 def cmd_say(args) -> int:
     """合成一段粤语并播放（或写 WAV），顺带看首句延迟。"""
     import numpy as np
@@ -269,15 +298,14 @@ def cmd_say(args) -> int:
     if args.output is None:
         from catman_io.tts.speaker import SoundDeviceOutput, Speaker
 
-        speaker = Speaker(
-            SoundDeviceOutput(cfg.audio.output_device, blocksize=cfg.speaker.blocksize, latency=cfg.speaker.latency),
-            volume=cfg.speaker.volume,
-            blocksize=cfg.speaker.blocksize,
+        output = SoundDeviceOutput(
+            cfg.audio.output_device, blocksize=cfg.speaker.blocksize, latency=cfg.speaker.latency
         )
+        speaker = Speaker(output, volume=cfg.speaker.volume, blocksize=cfg.speaker.blocksize)
         speaker.set_gen(1)
     pieces = []
     t_start = time.perf_counter()
-    for i, s in enumerate(sentences):
+    for s in sentences:
         pcm = tts.synthesize(s)
         stamp = f"+{time.perf_counter() - t_start:5.2f}s"
         cached = " (cached)" if getattr(tts, "last_fetch_seconds", 1.0) == 0.0 else ""
@@ -365,6 +393,19 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--max-seconds", type=float, default=None, help="--wav 时最多跑多少秒")
     p.set_defaults(fn=cmd_listen)
 
+    p = sub.add_parser("run", help="跑整条管线：唤醒 → 聆听 → 识别 → 应答 → 播报")
+    _add_wake_args(p)
+    p.add_argument("-d", "--device", help="输入设备编号或名字子串")
+    p.add_argument("--channel", type=int, help="多声道设备取哪一路")
+    p.add_argument("--wav", type=Path, help="用 WAV 文件代替麦克风（离线测试）")
+    p.add_argument("--out", type=Path, help="把播出的声音写到这个 WAV 而不是扬声器")
+    p.add_argument("--realtime", action="store_true", help="--wav 时按真实时间节奏喂")
+    p.add_argument("--max-seconds", type=float, help="最多跑多少秒（按音频时钟）")
+    p.add_argument("--status", action="store_true", help="--wav 时也打印状态行")
+    p.add_argument("--no-tts", action="store_true", help="不合成不出声，只打日志")
+    p.add_argument("--no-asr", action="store_true", help="不识别（只验证唤醒与切句）")
+    p.set_defaults(fn=cmd_run)
+
     p = sub.add_parser("say", help="合成一段粤语并播放（-o 写成 WAV），测试 TTS 与扬声器")
     p.add_argument("text", nargs="+")
     p.add_argument("-c", "--config", type=Path, help="YAML 配置")
@@ -388,6 +429,6 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     device = getattr(args, "device", None)
-    if args.cmd in ("wake", "listen") and device is not None and str(device).isdigit():
+    if args.cmd in ("wake", "listen", "run") and device is not None and str(device).isdigit():
         args.device = int(args.device)
     return args.fn(args)

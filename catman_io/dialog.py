@@ -49,8 +49,10 @@ class Turn:
     t_interrupted: float | None = None
     forced_end: bool = False
     audio: np.ndarray | None = None
+    wake_audio: np.ndarray | None = None  # 唤醒前后那一小段，留作训练样本
     status: str = "open"
     payload: Any = None
+    info: dict[str, Any] = field(default_factory=dict)  # pipeline / worker 往里放识别结果、延迟等
     cancelled: threading.Event = field(default_factory=threading.Event, repr=False, compare=False)
 
 
