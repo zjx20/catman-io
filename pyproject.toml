@@ -20,12 +20,17 @@ dependencies = [
   "openwakeword>=0.6.0",
   "onnxruntime>=1.16",
   "pyyaml>=6.0",
+  "zhconv>=1.4",
 ]
 
 [project.optional-dependencies]
 # 麦克风采集 / 扬声器播放（需要系统 PortAudio：apt install libportaudio2）
-audio = ["sounddevice>=0.4.6"]
-# 网页版测试 demo（浏览器麦克风 → WebSocket → 检测器）
+audio = ["sounddevice>=0.4.6", "scipy>=1.10"]
+# 粤语语音识别（sherpa-onnx 自带 onnxruntime；模型另用 catman-io setup --asr 下载）
+asr = ["sherpa-onnx>=1.10"]
+# 粤语语音合成（edge-tts 联网合成，soundfile 解码 MP3）
+tts = ["edge-tts>=7.0", "soundfile>=0.12", "scipy>=1.10"]
+# 网页版测试 demo 与 catman-io run 内嵌的 HTTP API（都是 aiohttp）
 demo = ["aiohttp>=3.9"]
 # 训练唤醒词模型（在开发机上跑，不需要装到目标机器）
 train = [
@@ -43,6 +48,7 @@ dev = [
   "soundfile>=0.12",
   "scipy>=1.10",
   "aiohttp>=3.9",
+  "edge-tts>=7.0",
 ]
 
 [project.scripts]
@@ -58,6 +64,7 @@ include = ["catman_io*"]
 [tool.setuptools.package-data]
 "catman_io.wakeword" = ["models/*.onnx", "models/*.json"]
 "catman_io.webdemo" = ["static/*"]
+"catman_io.intent" = ["rules/*.yaml"]
 
 [tool.ruff]
 line-length = 110
