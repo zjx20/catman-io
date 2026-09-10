@@ -1,4 +1,4 @@
-"""命令行：catman-io devices | setup | wake | wake-file | webdemo | listen"""
+"""命令行：catman-io devices | setup | wake | wake-file | webdemo | listen | asr"""
 
 from __future__ import annotations
 
@@ -54,7 +54,42 @@ def cmd_setup(args) -> int:
     )
     for m in models:
         print("  ", m)
+    if args.list_asr:
+        from catman_io.asr.models import ASR_MODELS
+
+        for m in ASR_MODELS.values():
+            print(f"  asr model {m.name:<22} {m.size_mb:>4} MB  {m.kind:<10} {m.note}")
+    if args.asr is not None:
+        from catman_io.asr.models import ensure_asr_model, resolve_model
+
+        cfg = Config.load(args.config)
+        model = resolve_model(cfg.asr.backend, args.asr or cfg.asr.model)
+        path = ensure_asr_model(cfg.asr_model_dir, model)
+        print(f"asr model {model.name} ready: {path}")
     return 0
+
+
+def cmd_asr(args) -> int:
+    """对 WAV 文件离线识别，顺带打印耗时与 RTF。"""
+    from catman_io.asr import create_recognizer
+    from catman_io.audio.frames import read_wav
+
+    cfg = Config.load(args.config)
+    if args.backend:
+        cfg.asr.backend = args.backend
+    if args.model:
+        cfg.asr.model = args.model
+    if args.threads:
+        cfg.asr.threads = args.threads
+    rec = create_recognizer(cfg)
+    rc = 0
+    for wav in args.wav:
+        tr = rec.transcribe(read_wav(wav, channel=args.channel or 0))
+        stats = f"{tr.duration:.2f}s audio, {tr.elapsed:.2f}s, RTF {tr.rtf:.2f}, lang {tr.language}"
+        print(f"{wav}: {tr.text!r}  ({stats})")
+        if not tr.text:
+            rc = 1
+    return rc
 
 
 def cmd_wake(args) -> int:
@@ -233,7 +268,20 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("devices", help="列出音频设备").set_defaults(fn=cmd_devices)
-    sub.add_parser("setup", help="下载 openWakeWord 基础模型并检查随包模型").set_defaults(fn=cmd_setup)
+    p = sub.add_parser("setup", help="下载 openWakeWord 基础模型（--asr 再下载语音识别模型）")
+    p.add_argument("-c", "--config", type=Path, help="YAML 配置（决定 ASR 后端与模型目录）")
+    p.add_argument("--asr", nargs="?", const="", metavar="NAME", help="下载 ASR 模型；不给名字用配置里的默认")
+    p.add_argument("--list-asr", action="store_true", help="列出可选的 ASR 模型")
+    p.set_defaults(fn=cmd_setup)
+
+    p = sub.add_parser("asr", help="对 WAV 文件离线做粤语识别（测试识别器）")
+    p.add_argument("wav", type=Path, nargs="+")
+    p.add_argument("-c", "--config", type=Path, help="YAML 配置")
+    p.add_argument("--backend", choices=["sensevoice", "wenet_yue"], help="覆盖配置里的 asr.backend")
+    p.add_argument("--model", help="覆盖配置里的 asr.model")
+    p.add_argument("--threads", type=int, help="识别线程数")
+    p.add_argument("--channel", type=int, help="多声道文件取哪一路")
+    p.set_defaults(fn=cmd_asr)
 
     p = sub.add_parser("wake", help="用麦克风实时检测唤醒词")
     _add_wake_args(p)
