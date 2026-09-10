@@ -127,6 +127,32 @@ def test_augmenter_tempo_only_shortens_positive():
     assert abs((nz[-1] - nz[0]) - SR / 1.5) < 0.02 * SR
 
 
+def test_augmenter_never_compresses_below_min_seconds():
+    cfg = AugmentConfig(
+        clip_seconds=2.0,
+        p_tempo=1.0,
+        tempo_range=[2.0, 2.0],
+        p_speed=1.0,
+        speed_factors=[1.3],
+        min_seconds=0.45,
+        p_rir=0.0,
+        p_background=0.0,
+        p_babble=0.0,
+        p_colored_noise=0.0,
+        p_bandstop=0.0,
+        p_lowpass=0.0,
+        p_distortion=0.0,
+        peak_range=[1.0, 1.0],
+        end_jitter=0.0,
+    )
+    aug = Augmenter(cfg, seed=0)
+    for seconds in (0.5, 0.4):
+        out = aug(tone(seconds), True)
+        nz = np.nonzero(np.abs(out) > 1e-4)[0]
+        # 0.5 s 只能压到 0.45 s；0.4 s 本来就更短，原样保留
+        assert abs((nz[-1] - nz[0]) - min(seconds, 0.45) * SR) < 0.02 * SR, seconds
+
+
 def test_audio_pool_segments():
     pool = AudioPool([tone(0.5), tone(0.3, 330)])
     rng = np.random.default_rng(3)

@@ -290,10 +290,12 @@ class Augmenter:
     def __call__(self, x: np.ndarray, positive: bool) -> np.ndarray:
         cfg, rng = self.cfg, self.rng
         x = x.astype(np.float32)
+        # 两种变速都不把片段压到比 min_seconds 更短：真人再快也说不到那么短，硬压出来的只是噪声般的正样本
+        min_len = cfg.min_seconds * SR
         if rng.random() < cfg.p_tempo:
-            x = time_stretch(x, float(rng.uniform(*cfg.tempo_range)))
+            x = time_stretch(x, min(float(rng.uniform(*cfg.tempo_range)), max(1.0, len(x) / min_len)))
         if rng.random() < cfg.p_speed:
-            x = speed_perturb(x, float(rng.choice(cfg.speed_factors)))
+            x = speed_perturb(x, min(float(rng.choice(cfg.speed_factors)), max(1.0, len(x) / min_len)))
         # 负样本一半右对齐（"小貓"刚说完这种最容易混的对齐），一半随机位置
         align = "right" if positive or rng.random() < 0.5 else "random"
         x = fit_clip(x, self.total, rng, cfg.end_jitter, align)

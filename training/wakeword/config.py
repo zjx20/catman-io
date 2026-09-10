@@ -89,6 +89,8 @@ class AugmentConfig:
     # WSOLA 变速不变调，倍率在区间内均匀采样（>1 变快）；正负样本都做，让"快"本身不成为唤醒线索
     tempo_range: list[float] = field(default_factory=lambda: [0.9, 1.6])
     p_tempo: float = 0.5
+    # 变速后的片段不短于这个秒数（含裁静音留下的约 90 ms 余量）：三个音节真人最快也要 0.35 s 左右
+    min_seconds: float = 0.45
     snr_db: list[float] = field(default_factory=lambda: [-5.0, 20.0])
     p_background: float = 0.75
     p_colored_noise: float = 0.3
