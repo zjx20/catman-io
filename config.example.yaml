@@ -1,12 +1,113 @@
-# catman-io 运行时配置示例：catman-io wake -c config.yaml
+# catman-io 运行时配置示例：catman-io run -c config.yaml
+# 每个 section 都有默认值，不写就是默认 / 关掉。密钥一律不写在这里，用 *_env 指向环境变量。
+
+data_dir: data          # 日志、现场规则、缓存、识别模型、API 令牌都放这里
+
 audio:
-  device: null        # sounddevice 设备编号或名字子串（catman-io devices 查看）；null = 系统默认
-  channel: 0          # 多声道设备取哪一路
-  sample_rate: null   # null = 优先 16 kHz，不支持则自动重采样
+  device: null          # 输入设备编号或名字子串（catman-io devices 查看）；null = 系统默认
+  channel: 0            # 多声道设备取哪一路
+  sample_rate: null     # null = 优先 16 kHz，不支持则自动重采样
+  output_device: null   # 扬声器；null = 系统默认
 
 wakeword:
-  models: []          # 空 = 随包附带的模型；也可以填自己训练导出的 .onnx
-  threshold: 0.5      # 触发阈值，误唤醒多就调高，叫不醒就调低
-  patience: 1         # 连续多少帧（80 ms）高于阈值才触发
-  cooldown: 2.0       # 触发后的冷却秒数
-  vad_threshold: 0.0  # >0 时只在有人声时允许触发（silero VAD）
+  models: []            # 空 = 随包附带的模型；也可以填自己训练导出的 .onnx
+  threshold: 0.5        # 触发阈值，误唤醒多就调高，叫不醒就调低
+  patience: 1           # 连续多少帧（80 ms）高于阈值才触发
+  cooldown: 2.0         # 触发后的冷却秒数
+  vad_threshold: 0.0    # >0 时只在有人声时允许触发
+
+vad:                    # 端点检测：唤醒之后判断何时开口、何时说完
+  start_threshold: 0.6
+  end_threshold: 0.35
+  start_frames: 2
+  pre_roll_ms: 300
+  trailing_silence_ms: 600     # 停多久算说完；说话慢、常停顿就调大
+  min_speech_ms: 200
+  max_utterance_ms: 12000
+  no_speech_timeout_ms: 5000   # 唤醒后多久没人说话就放弃
+  followup_start_threshold: 0.8
+  followup_start_frames: 3
+  followup_guard_ms: 400
+
+asr:
+  backend: sensevoice   # sensevoice | wenet_yue | none
+  model: ""             # 空 = 该后端的默认模型；catman-io setup --list-asr 看可选
+  model_dir: ""         # 空 = <data_dir>/models/asr
+  language: yue
+  threads: 2
+  use_itn: true
+
+intent:
+  rules_dir: ""         # 现场规则目录；空 = <data_dir>/intent/rules（同名意图覆盖内置）
+  cases_file: ""        # 回归用例；空 = <data_dir>/intent/cases.jsonl
+  llm:                  # 第 1 层：规则没中时一次 function calling（OpenAI 兼容端点）
+    enabled: false
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai   # Gemini 的兼容端点；OpenAI / DeepSeek / 本地 vLLM 都行
+    model: ""           # 例如 gemini-2.5-flash
+    api_key_env: CATMAN_IO_LLM_API_KEY
+    timeout: 4.0        # 超时就落到大脑，并打 llm_timeout 标记
+    tool_choice: auto   # 有的端点支持 required
+    answer_chat: false  # 模型直接回了文本就当回复念出来，不再进大脑（最快，但少了对话记忆）
+    shadow_rate: 0.0    # 规则命中后抽样再问一次 LLM 做对照（后台，不影响延迟；0.1 = 一成）
+  context:
+    rooms: []           # 房间名，例如 ["客廳|廳", "睡房|房", "廚房"]，给 room 槽位与 LLM 提示
+    home: ""            # 一句话描述这个家，放进 LLM 提示
+    extra: ""
+
+brain:
+  llm:                  # 第 2 层：闲聊 / 问答的对话模型（流式）
+    enabled: false
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    model: ""
+    api_key_env: CATMAN_IO_LLM_API_KEY
+    timeout: 30.0
+    max_tokens: 400
+    system_prompt: ""   # 空 = 内置的"简短粤语口语、不用 markdown"提示
+    memory_minutes: 10.0
+    memory_turns: 6
+  catman:               # delegate：把要动手做的任务交给 catman（结果走微信）
+    base_url: ""        # 例如 http://192.168.1.1:8787；空 = 不接
+    token_env: CATMAN_ADMIN_TOKEN
+    timeout: 5.0
+
+tts:
+  backend: edge         # edge | none
+  voice: zh-HK-HiuMaanNeural   # zh-HK-HiuGaaiNeural / zh-HK-WanLungNeural（男声）
+  rate: "+0%"
+  pitch: "+0Hz"
+  cache_dir: ""         # 空 = <data_dir>/cache/tts
+  timeout: 10.0
+
+speaker:
+  volume: 0.8           # 0 到 1；「大聲啲 / 細聲啲」改的就是它
+  blocksize: 320
+  latency: low
+
+dialog:
+  followup_seconds: 6.0          # 回答完后几秒内不用叫唤醒词；0 = 关
+  followup_question_seconds: 10.0
+  earcons: true                  # 唤醒 / 超时 / 出错 / 思考中 的提示音
+  thinking_beep_after: 1.5
+  turn_timeout: 120.0
+  reprompt_on_empty: true        # 没听清时再听一次
+  slow_threshold: 3.0            # 说完到开口超过几秒打 slow 标记
+  wake_context_seconds: 1.5      # 唤醒时往前保存多少音频（训练样本）
+
+journal:
+  enabled: true
+  save_audio: true
+  keep_days: 30
+
+api:                    # 本机 HTTP API：给 catman 拉 bad case、改规则
+  enabled: true
+  host: 127.0.0.1       # 给 Docker 里的 catman 或局域网访问要改成 0.0.0.0
+  port: 8766
+  token_env: CATMAN_IO_API_TOKEN
+  token_file: ""        # 空 = <data_dir>/api_token（首次运行自动生成）
+
+actions:
+  weather:              # Open-Meteo，免 key；不填经纬度就不能报天气
+    latitude: null      # 例如 22.3
+    longitude: null     # 例如 114.2
+    name: ""            # 报天气时念的地名
+  http_timeout: 5.0

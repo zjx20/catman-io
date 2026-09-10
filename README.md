@@ -2,114 +2,151 @@
 
 [catman](https://github.com/zjx20/catman) 的**语音输入输出**组件：一套**以粤语为前提**的智能语音助手软件栈。
 它面向已经做好远场拾音和降噪的音频设备，负责后面的一切——把处理过的音频变成"唤醒 → 听懂 → 回应"，
-运行在一台小主机上，只用 CPU。
+运行在一台只有 CPU 的小主机上。
+
+目标是天猫精灵那种响应速度，加上大模型的智能：简单指令（報時、計時、天氣、音量……）走本地规则，
+零延迟、可离线；说法灵活的指令交给一次 flash 级模型的 function calling（约一秒）；闲聊问答交给对话模型
+流式回答；要动手做事的任务交给 catman。每一回合都记日志、自动标出 bad case，让 catman 定期把 bad case
+变成更好的规则——**规则越用越准，不用人盯着**。
 
 ```
-麦克风/拾音设备 ──► 采集(16 kHz · 80 ms 一帧)
-                      │
-                      ▼
-                 唤醒词检测「小貓人」 ◄── 本仓库当前完成的部分
-                      │ 唤醒
-                      ▼
-            VAD 端点检测 ──► 粤语语音识别 ──► 意图识别 ──► catman 后端
-                      │                                      │
-                      └──► 音频流推送（live 模型）             ▼
-                                                   粤语语音合成 ──► 扬声器
+拾音设备 ─► 采集(16 kHz · 80 ms/帧) ─► 唤醒词「小貓人」 ─► 端点检测(silero VAD) ─► 粤语识别(SenseVoice)
+                                                                                        │
+              扬声器 ◄─ 粤语合成(edge-tts) ◄─ 应答 ◄─┬─ ① 规则（YAML，零延迟）◄──────────┘
+                 ▲                                  ├─ ② LLM function calling（约 1 s）
+                 │                                  ├─ ③ 对话模型（流式）
+              提示音、打断、免唤醒跟进               └─ delegate → catman（结果走微信）
+                                                            │
+                                     回合日志 → 自动标记 bad case → HTTP API → catman 改规则 → 热加载
 ```
 
 | 模块 | 职责 | 状态 |
 |---|---|---|
-| `catman_io.audio` | 采集 / 播放 / 帧工具，全栈统一 16 kHz 单声道、80 ms 一帧 | ✅ |
-| `catman_io.wakeword` | 粤语唤醒词「小貓人」检测（openWakeWord + 自训练模型） | ✅ 可用，持续改进 |
-| `training/wakeword` | 唤醒词训练流水线：edge-tts 合成 → 增强 → 训练 → 导出 ONNX | ✅ |
-| `catman_io.vad` | 语音活动检测 / 端点检测 | 🚧 接口已定 |
-| `catman_io.asr` | 粤语语音转文字 | 🚧 接口已定 |
-| `catman_io.intent` | 意图识别（本地快捷指令 / 交给后端） | 🚧 接口已定 |
-| `catman_io.stream` | 把音频流推给后端 live 模型 | 🚧 接口已定 |
-| `catman_io.tts` | 粤语语音合成与音频输出 | 🚧 接口已定 |
+| `catman_io.audio` | 采集 / 帧工具，全栈统一 16 kHz 单声道、80 ms 一帧 | ✅ |
+| `catman_io.wakeword` + `training/wakeword` | 粤语唤醒词「小貓人」检测与训练流水线 | ✅ 可用，持续改进 |
+| `catman_io.vad` | silero VAD + 端点检测（何时开口、何时说完） | ✅ |
+| `catman_io.asr` | 粤语语音转文字（sherpa-onnx：SenseVoice / WenetSpeech-Yue） | ✅ |
+| `catman_io.intent` | 三层意图：规则 → LLM → 落空；归一化、槽位、回归用例 | ✅ |
+| `catman_io.actions` | 内置动作（報時 / 計時 / 音量 / 天氣…）与通用 http 动作 | ✅ |
+| `catman_io.brain` | 对话模型（OpenAI 兼容端点，流式，短期记忆）；catman 客户端 | ✅ |
+| `catman_io.tts` | edge-tts 粤语合成、可打断的扬声器、提示音 | ✅ |
+| `catman_io.dialog` / `pipeline` | 对话状态机与整条流水线（`catman-io run`） | ✅ |
+| `catman_io.journal` / `api` | 回合日志、bad case 标记、复盘包、给 catman 的 HTTP API | ✅ |
+| `catman_io.webdemo` | 浏览器麦克风测唤醒词 | ✅ |
+| `catman_io.stream` | 把音频流推给 live 模型 | 🚧 接口已定 |
+
+## 快速开始
+
+需要 Python 3.10 或 3.11（openWakeWord 依赖的 tflite-runtime 没有更高版本的轮子）。
+
+```bash
+pip install -e ".[audio,asr,tts,demo]"   # audio 要系统有 PortAudio（apt install libportaudio2）
+catman-io setup --asr                    # 下载 openWakeWord 基础模型（5 MB）和粤语识别模型（约 170 MB）
+cp config.example.yaml config.yaml       # 按需改：设备、经纬度（天气）、LLM 端点……
+export CATMAN_IO_LLM_API_KEY=...         # 开了 intent.llm / brain.llm 才需要
+catman-io run -c config.yaml
+```
+
+对着麦克风说「小貓人」，听到提示音后说话：「而家幾點」「幫我計十分鐘」「聽日會唔會落雨」「大聲啲」，
+或者随便聊。回答期间再叫「小貓人」可以打断；回答完几秒内不用叫唤醒词可以接着说。
+
+不想插麦克风也能整条跑：`catman-io run --wav 录音.wav --out 回复.wav`。
+
+## 命令一览
+
+| 命令 | 用途 |
+|---|---|
+| `catman-io run` | 整条流水线（`--wav/--out` 用文件代替麦克风 / 扬声器；`--no-tts`、`--no-asr`、`--no-api`） |
+| `catman-io listen` | 只跑前半段：唤醒 → 切句 → 存 WAV → 识别，在设备上调阈值用 |
+| `catman-io wake` / `wake-file` / `webdemo` | 唤醒词：实时仪表 / 离线检测 / 浏览器页面 |
+| `catman-io asr 录音.wav` | 试识别器（`--backend sensevoice\|wenet_yue`） |
+| `catman-io say "你好"` | 试合成与扬声器（`-o out.wav` 写文件） |
+| `catman-io intent parse "聽日會唔會落雨"` | 看一句话命中哪条规则（`--llm` 也问一次模型） |
+| `catman-io intent test` / `lint` / `list` | 跑回归用例 / 检查规则 / 列意图 |
+| `catman-io journal list --bad` / `show` / `review` | 看回合日志、bad case 复盘 |
+| `catman-io flywheel export` / `nudge` / `ack` | 导出复盘、叫 catman 来处理、记游标 |
+| `catman-io setup [--asr NAME] [--list-asr]` / `devices` | 模型与设备 |
+
+## 它怎么响应得快
+
+一句「查天气」从说完到听见第一个字，大头在端点检测的尾静音（0.6 s）、识别（2 核 CPU 上零点几秒）和
+合成首包，不在意图判断。所以：
+
+- 规则命中的回复**零延迟**，固定短语启动时预先合成进缓存；
+- 只有规则没中才问 LLM，一次 function calling，超时（默认 4 s）就落到对话模型；
+- 对话模型流式回答，第一句到了就开口；思考超过 1.5 s 先给一声提示音；
+- 回答完后几秒是免唤醒的跟进窗口，播报中随时可用唤醒词打断。
+
+三层意图：
+
+| 层 | 做什么 | 延迟 | 何时用 |
+|---|---|---|---|
+| ① 规则 | `catman_io/intent/rules/builtin.yaml` + 现场 `data/intent/rules/*.yaml`，粤语归一化 + 槽位解析 | ~0 | 每句先过 |
+| ② LLM | OpenAI 兼容端点一次 function calling，工具由规则文件生成 | ~1 s | 规则没中且配了 `intent.llm` |
+| ③ 大脑 | `brain.llm` 对话模型流式回答；`delegate` 把任务交给 catman | 秒级 | LLM 判为闲聊 / 任务 |
+
+内置意图：報時、日期、計時（含到点提醒）、音量、靜音、停、再講、幫助、天氣（Open-Meteo，免 key）。
+新技能只改 YAML（`http` 动作能调任何 REST 接口，例如 Home Assistant），LLM 层自动拿到对应工具。
+
+## 意图规则
+
+```yaml
+version: 1
+intents:
+  - name: timer.set
+    description: 設定倒數計時
+    slots: {duration: duration}               # 槽位类型：number / duration / time / date / percent / room / text
+    examples: ["幫我set個十分鐘嘅timer", "三個字之後叫我"]   # lint 要求全部命中本意图
+    patterns:
+      - "^{polite}(?:set|較|校)(?:一)?個?{duration}(?:嘅)?(?:timer|鬧鐘){tail}$"
+    action: builtin.timer
+```
+
+模式写在归一化后的文本上：无标点、小写、香港繁体（识别结果是简体也会先转繁），`{tail}` / `{polite}`
+是语气词与客气话的宏，槽位解析照顾香港说法（三個字 = 15 分鐘、三點三 = 3:15、下星期三）。
+现场规则放 `data/intent/rules/site.yaml`（同名意图覆盖内置），运行中改了会自动重新加载；
+`catman-io intent test` 用 `data/intent/cases.jsonl` 的回归用例守着旧行为。
+
+## 飞轮：bad case 自动收集，catman 来改
+
+每回合写进 `data/journal/`（文本、意图、回复、延迟、音频），自动打标记：规则没中但 LLM 判出了意图、
+用户马上重说或否定、误唤醒、识别为空、太慢……`catman-io run` 内嵌一个本机 HTTP API，catman 的助手按
+[integrations/catman/skills/catman-io/SKILL.md](integrations/catman/skills/catman-io/SKILL.md) 定期
+拉复盘、改 `site.yaml`、干跑回归、写回（自动 lint + 跑用例，过了才生效）。
+说明见 [docs/flywheel.md](docs/flywheel.md)，接法见 [integrations/catman/README.md](integrations/catman/README.md)。
+
+## 粤语识别
+
+用 [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 跑离线 int8 模型，整句进文本出。
+用 edge-tts 合成的 30 句粤语指令（三个音色）实测，2 线程：
+
+| 模型（`catman-io setup --asr 名字`） | 字错率 | RTF | 说明 |
+|---|---|---|---|
+| `sense-voice-2025-09`（默认） | 4.3% | 0.058 | SenseVoice-Small，用 2.18 万小时粤语微调；不出标点 |
+| `sense-voice-2024-07` | 3.4% | 0.058 | 原版，`use_itn` 可出标点 |
+| `wenet-yue-2025-09` | 4.7% | 0.030 | 粤语专用 CTC，最小最快 |
+
+错误集中在英文词（set / timer / catman）和语气词写法，归一化后不影响规则匹配。真人真环境会打折扣，
+`catman-io listen` 可以在设备上边听边看识别结果。
 
 ## 唤醒词：「小貓人」
 
 唤醒词是粤语的**「小貓人」**（siu2 maau1 jan4，简体写作"小猫人"）。检测基于
 [openWakeWord](https://github.com/dscripka/openWakeWord)：它的 melspectrogram + 语音嵌入模型把音频变成
 每 80 ms 一帧的 96 维特征（约 2.4 MB，两个 ONNX），我们只训练最后那个几十 KB 的小分类器。
-整条链路在一个 CPU 核上是实时的，占用极低。
 
-openWakeWord 官方的训练流程只支持英语（靠 Piper 合成样本、靠英语音素表造对抗样本），
-本仓库把它改成了粤语版：
+openWakeWord 官方的训练流程只支持英语，本仓库把它改成了粤语版：正样本用 edge-tts 的三个粤语音色按
+语速 × 音高 × 前缀展开；对抗负样本按粤拼手写（小貓 / 貓人 / 小狗人 / 燒貓人 / 小朋友…）；普通负样本是
+日常粤语句子加少量普通话、英语，再混入 openWakeWord 预计算的通用音频负样本；增强用纯 numpy/scipy
+（变速、混响、噪声、人声嘈杂、滤波、失真）；训练沿用 openWakeWord 的策略。详见
+[training/wakeword/README.md](training/wakeword/README.md)。
 
-- **正样本**用 [edge-tts](https://github.com/rany2/edge-tts) 的三个粤语音色（zh-HK）合成，
-  按语速 × 音高 × 标点/前缀展开成数百条不同读法；
-- **对抗负样本**按粤拼手写：只说一半（小貓 / 貓人）、换一个字（小狗人、小貓神、燒貓人）、
-  换序、常用相似词（小朋友、小籠包）等，见 `training/wakeword/phrases.py`；
-- **普通负样本**是日常粤语句子，外加少量普通话和英语；再混入 openWakeWord 预计算的通用音频负样本
-  （按需只下载十几小时那一小段，不用拉整个 17 GB）；
-- **增强**：变速、房间混响（MIT RIR）、环境噪声、人声嘈杂、有色噪声、滤波、失真、音量——纯 numpy/scipy；
-- **训练**沿用 openWakeWord 的策略（负样本权重线性上升、只对难样本回传、按每小时误唤醒挑检查点、权重平均）。
-
-### 随包模型 v0 的成绩
-
-`catman_io/wakeword/models/siu_maau_jan.onnx`（约 200 KB）只用合成语音训练，
-下面是它在**合成**验证集和 10.7 小时通用音频上的表现（详见旁边的 `siu_maau_jan.json`）：
-
-| 指标 | 阈值 0.5 | 阈值 0.7 |
-|---|---|---|
-| 召回率（干净合成语音 / 加噪加混响后） | 94.7% / 91.5% | 92.5% / 89.4% |
-| 误接受：日常句子（粤 / 普 / 英） | 0.0% | 0.0% |
-| 误接受：对抗短语（燒貓人、笑貓人、小貓銀 这类只差一个声调的） | 8.7% | 7.5% |
-| 通用音频每小时误唤醒 | 0.19 次 | 0.09 次（0.9 时为 0） |
-
-真人、真麦克风、真房间的效果会打折扣，这是所有纯合成训练的通病；补救办法见下文"训练 / 重训唤醒词"。
-
-## 安装
-
-需要 Python 3.10 或 3.11（openWakeWord 依赖的 tflite-runtime 目前没有更高版本的轮子）。
-
-```bash
-pip install -e ".[audio]"        # 运行时；audio = sounddevice，系统上要有 PortAudio（apt install libportaudio2）
-catman-io setup                  # 下载 openWakeWord 的基础模型（约 5 MB），并列出随包的唤醒词模型
-```
-
-## 试一下
-
-```bash
-catman-io devices                                   # 看看拾音设备是哪个
-catman-io wake -d <设备编号或名字>                    # 实时检测，对着麦克风说「小貓人」
-catman-io wake-file recording.wav --scores          # 对一段录音离线检测，逐帧打印分数
-```
-
-阈值、冷却时间、连续帧数等都可以用参数或 YAML 配置（见 `config.example.yaml`）。
-
-### 网页版测试（浏览器麦克风）
-
-不想折腾 PortAudio，或者想边看分数曲线边试，可以起一个本地网页：
-
-```bash
-pip install -e ".[demo]"
-catman-io webdemo --open          # 默认 http://127.0.0.1:8765 ，--record-dir 指定录音目录
-```
-
-页面里点"开始监听"，对着麦克风说「小貓人」，就能看到实时分数、命中记录、折合每小时的命中次数，
-阈值 / 连续帧 / 冷却都能拖着调。**"保存最近 3 秒"按钮会把录音存成 16 kHz WAV**（默认 `data/recordings/`），
-正好用来收集真人正样本和误唤醒片段，填进训练配置的 `extra_positive_dirs` / `extra_negative_dirs` 重训。
-浏览器只允许 `http://localhost` 或 https 页面用麦克风，要在别的机器上开页面就走 SSH 隧道
-（`ssh -L 8765:127.0.0.1:8765 <主机>`）。
-在代码里使用：
-
-```python
-from catman_io.audio.capture import MicCapture
-from catman_io.wakeword import WakeWordDetector
-
-detector = WakeWordDetector(threshold=0.5, cooldown=2.0)
-with MicCapture() as mic:
-    for frame in mic.frames():          # 每帧 80 ms、1280 个 int16 采样点
-        for det in detector.process(frame):
-            print("唤醒！", det.model, det.score)
-```
-
-## 训练 / 重训唤醒词
-
-详见 [training/wakeword/README.md](training/wakeword/README.md)。一句话版：
+随包模型 `catman_io/wakeword/models/siu_maau_jan.onnx`（约 200 KB）只用合成语音训练，在合成验证集与
+10.7 小时通用音频上：召回 94.7%（加噪加混响 91.5%），日常句子误接受 0%，只差一个声调的对抗短语误接受 8.7%，
+通用音频每小时误唤醒 0.19 次（阈值 0.5）。真人、真麦克风、真房间会打折扣；语速快时更容易漏，
+下次重训已把变速范围放宽到 1.3 倍、合成语速加到 +40%。**最有效的补救**是用目标设备录几十条真人的
+「小貓人」放进 `extra_positive_dirs`、录几段房间噪声放进 `background_dirs` 重训；`catman-io run` 里
+每次唤醒前后那一段音频也会存进日志目录，误唤醒的可以直接当反例。
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
@@ -118,22 +155,38 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
 python -m training.wakeword install --config training/wakeword/configs/siu_maau_jan.yaml
 ```
 
-随包附带的模型只用合成语音训练。要在真实环境里好用，**最有效的两件事**是：用目标设备录几十条真人说的
-「小貓人」放进 `extra_positive_dirs`，录几段房间噪声放进 `background_dirs`，然后重训。
+### 网页版测试（浏览器麦克风）
+
+```bash
+catman-io webdemo --open          # 默认 http://127.0.0.1:8765 ，--record-dir 指定录音目录
+```
+
+页面里点"开始监听"，对着麦克风说「小貓人」，能看到实时分数、命中记录、折合每小时的命中次数；
+"保存最近 3 秒"会把录音存成 16 kHz WAV，正好用来收集真人正样本和误唤醒片段。浏览器只允许
+`http://localhost` 或 https 页面用麦克风，在别的机器上开页面要走 SSH 隧道（`ssh -L 8765:127.0.0.1:8765 <主机>`）。
+
+## 配置
+
+见 [config.example.yaml](config.example.yaml)，每个键都有注释。密钥一律不写进 YAML，用 `*_env` 指向环境变量。
+要点：`audio.device` / `output_device`（设备编号或名字子串，`catman-io devices` 查）、`actions.weather` 的经纬度、
+`intent.llm` 与 `brain.llm`（OpenAI 兼容端点，Gemini 的兼容端点也行）、`brain.catman`（delegate 用）、
+`api.host`（给 Docker 里的 catman 访问要改成 `0.0.0.0`）。
 
 ## 开发
 
 ```bash
-pip install -e ".[dev,train]"
-ruff check catman_io training tests
-pytest -q
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -e ".[dev,train,audio,asr,tts,demo]"
+catman-io setup
+ruff check catman_io training tests && pytest -q
+CATMAN_IO_NETWORK_TESTS=1 pytest -q -m network            # 要联网的（edge-tts）
+CATMAN_IO_TEST_ASR_ROOT=data/models/asr pytest -q tests/test_asr.py   # 有识别模型时
 ```
 
 ## 路线图
 
-1. ✅ 唤醒词检测（粤语）
-2. VAD 端点检测：复用 openWakeWord 自带的 silero-vad
-3. 粤语 ASR：评估 SenseVoice / Whisper / FunASR 粤语模型在 CPU 上的表现
-4. 音频流推送：唤醒后把帧推给后端 live 模型，接收回传
-5. 意图识别：本地快捷指令与后端分流
-6. 粤语 TTS 与播放：先用 edge-tts zh-HK 音色，再评估离线方案
+1. ✅ 唤醒词（粤语）、端点检测、粤语识别、三层意图、动作、对话模型、粤语合成、整条流水线
+2. ✅ 回合日志与 bad case 飞轮、给 catman 的 HTTP API 与技能
+3. 用真人录音重训唤醒词（含快语速）；在目标设备上校准阈值与端点参数
+4. catman 侧 voice 渠道，让 delegate 的结果直接从扬声器出来（协议草案见 integrations/catman/README.md）
+5. 网页 demo 扩成整条流水线；音频流推送给 live 模型；离线粤语 TTS；智能家居预置意图

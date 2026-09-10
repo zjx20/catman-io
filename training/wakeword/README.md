@@ -65,6 +65,9 @@ python -m training.wakeword install --config training/wakeword/configs/siu_maau_
 加宽分类器只多换来两三个点的加噪召回，对抗短语误接受却从 8.7% 升到 12.2%，而且高阈值下误唤醒不再归零，
 所以默认保持 32。想提升召回，加真人录音比调结构有效得多。
 
+v0 实测语速快时容易漏，配置已把变速范围放宽到 0.85 到 1.3 倍、合成语速加到 +30% / +40%（正样本从 600 条
+增到 840 条），等真人录音到位后一起重训。
+
 ## 换一个唤醒词
 
 复制 `configs/siu_maau_jan.yaml`，改 `model_name` / `wake_phrase` / `workdir`，
