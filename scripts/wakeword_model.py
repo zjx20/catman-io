@@ -28,6 +28,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -414,6 +415,8 @@ def main(argv: list[str] | None = None) -> int:
 
     args = ap.parse_args(argv)
     args.repo = args.repo.resolve()
+    if hasattr(signal, "SIGPIPE"):  # `... | head` 关掉管道时安静退出
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     return args.fn(args)
 
 
