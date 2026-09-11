@@ -42,6 +42,7 @@
 ```bash
 pip install -e ".[audio,asr,tts,demo]"   # audio 要系统有 PortAudio（apt install libportaudio2）
 catman-io setup --asr                    # 下载 openWakeWord 基础模型（5 MB）和粤语识别模型（约 170 MB）
+python scripts/wakeword_model.py pull    # 从 models/wakeword/<版本> 分支取「小貓人」唤醒词模型（约 200 KB）
 cp config.example.yaml config.yaml       # 按需改：设备、经纬度（天气）、LLM 端点……
 export CATMAN_IO_LLM_API_KEY=...         # 开了 intent.llm / brain.llm 才需要
 catman-io run -c config.yaml
@@ -141,18 +142,32 @@ openWakeWord 官方的训练流程只支持英语，本仓库把它改成了粤�
 （变速、混响、噪声、人声嘈杂、滤波、失真）；训练沿用 openWakeWord 的策略。详见
 [training/wakeword/README.md](training/wakeword/README.md)。
 
-随包模型 `catman_io/wakeword/models/siu_maau_jan.onnx`（约 200 KB）只用合成语音训练（语速 -20% 到 +100%），
-在合成验证集与 10.7 小时通用音频上：召回 92.6%（加噪加混响 82.9%），说到 1.5 倍速仍有 88.6%，日常句子误接受 0.8%，
-只差一个声调的对抗短语误接受 10.6%，通用音频每小时误唤醒 0.19 次（阈值 0.5）。上一版语速快时容易漏，这一版
-专门补了快语速（对照数据见训练文档）。真人、真麦克风、真房间会打折扣，**最有效的补救**是用目标设备录几十条真人的
-「小貓人」放进 `extra_positive_dirs`、录几段房间噪声放进 `background_dirs` 重训；`catman-io run` 里
-每次唤醒前后那一段音频也会存进日志目录，误唤醒的可以直接当反例。
+**模型有版本，不放在代码分支里。** 每个版本一条 `models/wakeword/<版本>` 分支，里面是训练它的那份代码、
+模型文件（`catman_io/wakeword/models/siu_maau_jan.onnx` + 同名 `.json`，约 200 KB）、训练用的合成片段和一份
+自动生成的说明 `MODEL.md`；`catman_io/wakeword/models/VERSION` 写着当前代码推荐的版本。
+
+```bash
+python scripts/wakeword_model.py list      # 有哪些版本
+python scripts/wakeword_model.py pull      # 取推荐版本（或 pull v0 指定版本）到 catman_io/wakeword/models/
+python scripts/wakeword_model.py show v2   # 看某个版本的训练配置、评估与真机备注
+```
+
+| 版本 | 正样本语速 | 后处理变速 | 合成验证集召回@0.5（干净 / 1.5 倍速） | 真机 |
+|---|---|---|---|---|
+| v0 | -20% ～ +20% | 重采样 0.9～1.1 | 88.0% / 60.0% | 慢速、正常语速可用，说快了漏 |
+| v1 | -20% ～ +100% | 重采样 0.85～1.3 | 92.6% / 88.6% | 中等语速比 v0 差，快语速没明显改善 |
+
+各版本都只用合成语音训练，日常句子误接受 ≤ 1%、通用音频每小时误唤醒 0.19 次（阈值 0.5）。合成验证集上的数字
+并不能代替真机：v1 在合成集上全面领先 v0，真机反而更差。真人、真麦克风、真房间会打折扣，**最有效的补救**是用目标
+设备录几十条真人的「小貓人」放进 `extra_positive_dirs`、录几段房间噪声放进 `background_dirs` 重训；`catman-io run`
+里每次唤醒前后那一段音频也会存进日志目录，误唤醒的可以直接当反例。
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -e ".[train]"
 python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.yaml
-python -m training.wakeword install --config training/wakeword/configs/siu_maau_jan.yaml
+python -m training.wakeword install --config training/wakeword/configs/siu_maau_jan.yaml   # 复制到包里本机试用
+python scripts/wakeword_model.py publish v3 --notes "改了什么、真机表现" --push            # 发布成版本分支
 ```
 
 ### 网页版测试（浏览器麦克风）
@@ -178,6 +193,7 @@ catman-io webdemo --open          # 默认 http://127.0.0.1:8765 ，--record-dir
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -e ".[dev,train,audio,asr,tts,demo]"
 catman-io setup
+python scripts/wakeword_model.py pull                    # 没有模型时相关测试会跳过
 ruff check catman_io training tests && pytest -q
 CATMAN_IO_NETWORK_TESTS=1 pytest -q -m network            # 要联网的（edge-tts）
 CATMAN_IO_TEST_ASR_ROOT=data/models/asr pytest -q tests/test_asr.py   # 有识别模型时

@@ -27,5 +27,7 @@ jobs:
         run: ruff check catman_io training tests
       - name: Download openWakeWord base models
         run: catman-io setup
+      - name: Fetch the wake-word model (models/wakeword/<version> branch)
+        run: python scripts/wakeword_model.py pull
       - name: Test
         run: pytest -q

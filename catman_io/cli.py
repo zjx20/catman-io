@@ -45,6 +45,7 @@ def cmd_devices(args) -> int:
 
 def cmd_setup(args) -> int:
     from catman_io.wakeword import bundled_models, ensure_base_models
+    from catman_io.wakeword.detector import MODELS_DIR
 
     ensure_base_models()
     models = bundled_models()
@@ -54,6 +55,11 @@ def cmd_setup(args) -> int:
     )
     for m in models:
         print("  ", m)
+    installed = MODELS_DIR / "INSTALLED"
+    if installed.exists():
+        print("   version:", installed.read_text(encoding="utf-8").strip())
+    if not models:
+        print("   fetch one with: python scripts/wakeword_model.py pull (see catman_io/wakeword/models/)")
     if args.list_asr:
         from catman_io.asr.models import ASR_MODELS
 

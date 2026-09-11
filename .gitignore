@@ -14,3 +14,9 @@ dist/
 # 训练产物（音频、特征、检查点）体积大，不进仓库；导出的最终模型手动 install 到 catman_io/wakeword/models/
 training/wakeword/work/
 /data/
+
+# 唤醒词模型文件不进代码分支：每个版本在 models/wakeword/<版本> 分支里（代码 + 模型 + 训练数据），
+# 用 scripts/wakeword_model.py pull 取到这里；VERSION 与 README.md 留在代码里
+catman_io/wakeword/models/*.onnx
+catman_io/wakeword/models/*.json
+catman_io/wakeword/models/INSTALLED

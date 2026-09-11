@@ -12,7 +12,8 @@ features   增强（变速/混响/噪声/滤波/失真/音量）→ openWakeWord
 train      训练小分类器、按每小时误唤醒挑检查点、导出 ONNX          →  work/<name>/export/<name>.onnx
 evaluate   在验证集音频上流式跑一遍，给出各阈值下的召回率 / 误接受率 / 每小时误唤醒，
            并把干净片段压到 1.25～2 倍速（WSOLA，音高不变）做快语速压力测试
-install    把 ONNX 和元数据复制到 catman_io/wakeword/models/
+install    把 ONNX 和元数据复制到 catman_io/wakeword/models/（本机试用；代码分支不收模型文件）
+publish    scripts/wakeword_model.py publish v3 ...：把代码 + 模型 + 合成片段发布成 models/wakeword/v3 分支
 ```
 
 ```bash
@@ -22,7 +23,18 @@ pip install -e ".[train]"
 python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.yaml
 # 或分步：synth / resources / features / train / evaluate / install
 python -m training.wakeword install --config training/wakeword/configs/siu_maau_jan.yaml
+python scripts/wakeword_model.py publish v3 --notes "改了什么、真机表现" --push   # 满意了再发布成版本分支
 ```
+
+## 模型版本
+
+模型二进制不进代码分支，每个版本一条 `models/wakeword/<版本>` 分支：训练它的代码提交之上加一个提交，
+装进 `catman_io/wakeword/models/` 下的 `.onnx` / `.json`、训练配置 YAML、`training/wakeword/work/<名字>/` 下的
+合成片段与 `export/`（`resources/` 可重复下载、`features/` 可重算，不进），以及根目录自动生成的 `MODEL.md`
+（训练配置摘要、评估、你写的说明）。`publish` 用 git 底层命令直接造这个提交，不碰工作区、不切分支；
+`pull` 用部分克隆只拉模型那两个文件。要复现或在同一批数据上改配置重训，`git checkout models/wakeword/v2`
+后跑 `resources`（补下载）→ `features` → `train` 即可。代码分支里 `catman_io/wakeword/models/VERSION`
+写着推荐版本，`pull` 不带参数就取它。真机测试的结论请写进 `--notes`，合成验证集的数字不能代替它。
 
 每一步都是幂等的：合成只补缺失的片段，下载支持断点续传，特征文件存在就跳过（`--overwrite` 重算）。
 默认配置合成约 4000 条片段（十几分钟，取决于网络），特征几分钟，训练在 4 核 CPU 上约 20 分钟。

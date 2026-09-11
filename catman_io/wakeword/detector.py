@@ -48,8 +48,10 @@ def default_model_path() -> Path:
     models = bundled_models()
     if not models:
         raise FileNotFoundError(
-            f"no wake-word model found in {MODELS_DIR}; train one with `python -m training.wakeword all ...` "
-            "and install it, or pass model_paths explicitly"
+            f"no wake-word model found in {MODELS_DIR}; fetch one with "
+            "`python scripts/wakeword_model.py pull` (models live in the models/wakeword/<version> "
+            "branches), train one with "
+            "`python -m training.wakeword all ...`, or pass model_paths explicitly"
         )
     return models[0]
 

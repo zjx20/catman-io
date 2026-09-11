@@ -17,6 +17,7 @@ catman（https://github.com/zjx20/catman）的语音输入输出组件：粤语�
 pip install torch --index-url https://download.pytorch.org/whl/cpu   # 训练 / 测试需要，用 CPU 版
 pip install -e ".[dev,train,audio,asr,tts,demo]"
 catman-io setup [--asr]              # 下载 openWakeWord 基础模型（tests 需要）；--asr 再下识别模型（170 MB）
+python scripts/wakeword_model.py pull   # 从 models/wakeword/<版本> 分支取唤醒词模型（代码分支里没有模型文件）
 ruff check catman_io training tests && pytest -q
 CATMAN_IO_NETWORK_TESTS=1 pytest -q -m network                   # 联网测试（edge-tts），默认跳过
 CATMAN_IO_TEST_ASR_ROOT=data/models/asr pytest -q tests/test_asr.py  # 有识别模型时跑真识别
@@ -36,12 +37,18 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
   网页 demo 与 HTTP API 都用它）；torch 只在 `[train]`。别把训练依赖引进运行时；新的重依赖放 extras 并在缺失时
   降级或给出安装提示。
 - `training/` 不随包安装，用 `python -m training.wakeword ...` 从仓库根目录运行；产物在 `training/wakeword/work/`
-  （gitignore），最终模型手动 `install` 到 `catman_io/wakeword/models/`。
+  （gitignore），`install` 只是把导出复制到 `catman_io/wakeword/models/` 供本机测试。
+- **模型版本管理**：模型二进制不进代码分支。每个版本一条 `models/wakeword/<版本>` 分支 = 训练它的代码提交 +
+  一个提交（`catman_io/wakeword/models/*.onnx|json`、训练配置、`training/wakeword/work/<名字>/` 下的合成片段与
+  export；可重复下载的 `resources/` 和可重算的 `features/` 不进），根目录 `MODEL.md` 是自动生成的版本说明。
+  `catman_io/wakeword/models/VERSION` 写着代码推荐的版本，`scripts/wakeword_model.py pull` 只取模型文件（部分克隆），
+  `publish v3 --notes ... --push` 发布新版本，`git checkout models/wakeword/v2` 可复现或重训。CI 也靠 `pull` 拿模型；
+  没模型时相关测试自动跳过。合成验证集的数字不能代替真机测试（v1 合成集全面领先 v0，真机反而更差）。
 - 唤醒词模型文件名就是 openWakeWord 里的模型名（`siu_maau_jan.onnx` → `Detection.model="siu_maau_jan"`），
   旁边同名 `.json` 记录训练数据、评估结果和配置。正样本训练时右对齐到 2 秒窗口末尾，所以 `phrases.py` 里
   正样本只能加前缀不能加后缀；负样本文本绝不能包含唤醒词（`tests/test_phrases.py` 守着）。
-  快语速靠 TTS 合成到 +100%；`augment.time_stretch`（WSOLA 变速不变调）只用在 `evaluate` 的快语速压力测试里，
-  训练时 `p_tempo` 保持 0（实测拿它增强训练集会拖低正常语速的召回）。
+  语速的多样性全部来自 TTS 多档语速（到 +100%），训练时不做后处理变速（`p_speed` / `p_tempo` 都是 0）；
+  `augment.time_stretch`（WSOLA 变速不变调）只用在 `evaluate` 的快语速压力测试里。
 - **线程模型**（`pipeline.py`）：主线程跑帧循环，每帧过唤醒检测与 VAD，喂 `dialog.Dialog`（纯状态机，只有主线程碰）
   并执行它吐出的命令；worker 线程做识别 / 应答 / 合成，通过事件队列汇报；Speaker 自带写线程；API 在自己的 loop 线程。
   回合有 `gen` 代号与 `cancelled` 标志，`speaker.say(pcm, gen)` 丢弃过期回合的音频——打断靠这个，别绕过它。
