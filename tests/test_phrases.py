@@ -44,6 +44,15 @@ def test_near_homophones_are_kept_out_of_training():
     assert not any(s.kind == "homophone" for s in groups[("negative", "train")])
     assert any(s.kind == "homophone" for s in groups[("negative", "val")])
 
+    # train_on_homophones=True 时近音短语回到训练集；留出的音色（正负样本）只进验证集
+    cfg.data.train_on_homophones = True
+    cfg.data.holdout_voices = ["zh-HK-WanLungNeural"]
+    groups = gather_samples(cfg, records)
+    assert any(s.kind == "homophone" for s in groups[("negative", "train")])
+    for lb in ("positive", "negative"):
+        assert not any(s.voice == "zh-HK-WanLungNeural" for s in groups[(lb, "train")])
+        assert any(s.voice == "zh-HK-WanLungNeural" for s in groups[(lb, "val")])
+
 
 def test_plan_jobs_respects_limits_and_split():
     from training.wakeword.config import TrainingConfig

@@ -69,14 +69,21 @@ def compute_features(
 
 # ---------------------------------------------------------------- 样本来源
 class Sample:
-    __slots__ = ("path", "positive", "weight", "kind", "text", "rate")
+    __slots__ = ("path", "positive", "weight", "kind", "text", "rate", "voice")
 
     def __init__(
-        self, path: Path, positive: bool, weight: int = 1, kind: str = "", text: str = "", rate: str = ""
+        self,
+        path: Path,
+        positive: bool,
+        weight: int = 1,
+        kind: str = "",
+        text: str = "",
+        rate: str = "",
+        voice: str = "",
     ):
         self.path, self.positive, self.weight = path, positive, weight
-        # 来源类别（positive/adversarial/general/extra）、文本与 TTS 语速，仅用于评估报告
-        self.kind, self.text, self.rate = kind, text, rate
+        # 来源类别（positive/adversarial/homophone/general/extra）、文本、TTS 语速与音色，仅用于评估报告
+        self.kind, self.text, self.rate, self.voice = kind, text, rate, voice
 
 
 def extra_dir_samples(
@@ -96,11 +103,16 @@ def gather_samples(cfg: TrainingConfig, records: list[ClipRecord]) -> dict[tuple
     groups: dict[tuple[str, str], list[Sample]] = {
         (lb, sp): [] for lb in ("positive", "negative") for sp in ("train", "val")
     }
+    holdout = set(cfg.data.holdout_voices)
     for r in records:
         lb = "positive" if r.is_positive else "negative"
-        split = "val" if r.label == "homophone" else r.split  # 近音短语只评估、不训练
+        split = r.split
+        if (r.label == "homophone" and not cfg.data.train_on_homophones) or r.voice in holdout:
+            split = "val"  # 近音短语（默认）与留出的音色只评估、不训练
         groups[(lb, split)].append(
-            Sample(cfg.clips_dir / r.wav, r.is_positive, kind=r.label, text=r.text, rate=r.rate)
+            Sample(
+                cfg.clips_dir / r.wav, r.is_positive, kind=r.label, text=r.text, rate=r.rate, voice=r.voice
+            )
         )
     for split, samples in extra_dir_samples(
         cfg.data.extra_positive_dirs, True, cfg.data.val_fraction, 3

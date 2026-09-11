@@ -50,6 +50,11 @@ class DataConfig:
     general_phrases: list[str] = field(default_factory=list)
     mandarin_phrases: list[str] = field(default_factory=list)
     english_phrases: list[str] = field(default_factory=list)
+    # true = 近音短语也当对抗负样本训练（v0/v1 的做法）；false = 只合成来评估
+    train_on_homophones: bool = False
+    # 整个音色留出来只做验证（正负样本都不训练）：估计模型对没见过的说话人的召回，
+    # 比默认的按片段随机划分诚实得多（后者训练集与验证集里有几乎一样的片段）
+    holdout_voices: list[str] = field(default_factory=list)
     # 真人录音目录（16 kHz 单声道 wav；其他采样率会自动重采样）。强烈建议录几十条正样本。
     extra_positive_dirs: list[str] = field(default_factory=list)
     extra_negative_dirs: list[str] = field(default_factory=list)

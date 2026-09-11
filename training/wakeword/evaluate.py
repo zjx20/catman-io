@@ -108,6 +108,8 @@ def run_evaluation(
         ns = clip_scores(model_path, [to_int16(x) for x in n_audio])
         kinds = sorted({s.kind for s in neg})
         rates = sorted({s.rate for s in pos if s.rate}, key=_rate_key)
+        voices = sorted({s.voice for s in pos if s.voice})
+        hit = [(s, sc >= 0.5) for s, sc in zip(pos, ps, strict=True)]
         result[name] = {
             "n_positive": len(ps),
             "n_negative": len(ns),
@@ -120,6 +122,9 @@ def run_evaluation(
             "recall_by_rate@0.5": {
                 r: round(float(np.mean([sc >= 0.5 for s, sc in zip(pos, ps, strict=True) if s.rate == r])), 4)
                 for r in rates
+            },
+            "recall_by_voice@0.5": {
+                v: round(float(np.mean([h for s, h in hit if s.voice == v])), 4) for v in voices
             },
             "positive_score_p10": round(float(np.percentile(ps, 10)), 4),
             "positive_score_median": round(float(np.median(ps)), 4),
@@ -183,6 +188,13 @@ def format_report(r: dict) -> str:
             lines.append(
                 "clean recall@0.5 by TTS rate: " + ", ".join(f"{k} {v:.3f}" for k, v in by_rate.items())
             )
+        for name in ("clean", "fast_x1.5"):
+            by_voice = r.get(name, {}).get("recall_by_voice@0.5", {})
+            if by_voice:
+                lines.append(
+                    f"{name} recall@0.5 by voice: "
+                    + ", ".join(f"{k.replace('Neural', '')} {v:.3f}" for k, v in by_voice.items())
+                )
     if r.get("top_false_accepts"):
         top = "; ".join(f"{d['text']} ({d['score']:.2f})" for d in r["top_false_accepts"][:8])
         lines.append("most accepted negatives: " + top)

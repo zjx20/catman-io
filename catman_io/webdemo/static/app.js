@@ -38,6 +38,11 @@
       while (state.points.length && state.points[0].t < cutoff) state.points.shift();
       while (state.hitPoints.length && state.hitPoints[0].t < cutoff) state.hitPoints.shift();
       $('score').textContent = m.score.toFixed(2);
+      // 同时加载了多个模型时，分别列出各自的分数（上面的大数字与曲线取最高分）
+      if (m.scores && Object.keys(m.scores).length > 1) {
+        $('perModel').textContent = Object.entries(m.scores)
+          .map(([k, v]) => `${k.replace(/^siu_maau_jan_?/, '') || k} ${v.toFixed(2)}`).join('　');
+      }
       $('fill').style.width = `${Math.min(100, m.score * 100)}%`;
       $('fill').classList.toggle('hit', m.score >= state.threshold);
       $('level').textContent = `${m.level_db.toFixed(0)} dBFS`;
