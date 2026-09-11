@@ -98,7 +98,8 @@ def gather_samples(cfg: TrainingConfig, records: list[ClipRecord]) -> dict[tuple
     }
     for r in records:
         lb = "positive" if r.is_positive else "negative"
-        groups[(lb, r.split)].append(
+        split = "val" if r.label == "homophone" else r.split  # 近音短语只评估、不训练
+        groups[(lb, split)].append(
             Sample(cfg.clips_dir / r.wav, r.is_positive, kind=r.label, text=r.text, rate=r.rate)
         )
     for split, samples in extra_dir_samples(

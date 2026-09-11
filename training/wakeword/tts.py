@@ -19,7 +19,7 @@ import os
 import random
 import ssl
 import subprocess
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -37,7 +37,7 @@ class SynthJob:
     voice: str
     rate: str
     pitch: str
-    label: str  # "positive" | "adversarial" | "general"
+    label: str  # "positive" | "adversarial" | "homophone" | "general"
     lang: str  # "zh-HK" | "zh-CN" | "en-US"
 
     @property
@@ -84,6 +84,7 @@ def plan_jobs(cfg: TrainingConfig) -> list[SynthJob]:
         SynthJob(text, voice, rate, pitch, label, "zh-HK")
         for label, texts in (
             ("adversarial", data.resolved_adversarial_phrases()),
+            ("homophone", data.resolved_homophone_phrases()),
             ("general", data.resolved_general_phrases()),
         )
         for text in texts
@@ -302,8 +303,13 @@ def run_synthesis(cfg: TrainingConfig) -> list[ClipRecord]:
                 split=split_for(job.key, cfg.data.val_fraction),
             )
 
-    wanted = {f"{j.stem}.wav" for j in jobs}
-    records = [r for name, r in existing.items() if name in wanted]
+    # 已有片段的文本 / 标签以当前计划为准（同一句话可能从 adversarial 挪到了 homophone）
+    by_name = {f"{j.stem}.wav": j for j in jobs}
+    records = [
+        replace(r, text=j.text, voice=j.voice, rate=j.rate, pitch=j.pitch, label=j.label, lang=j.lang)
+        for name, r in existing.items()
+        if (j := by_name.get(name)) is not None
+    ]
     write_manifest(cfg.manifest_path, records)
     n_pos = sum(r.is_positive for r in records)
     log.info(

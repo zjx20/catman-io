@@ -45,6 +45,8 @@ class DataConfig:
     # 留空则用 phrases.py 里的默认清单
     positive_phrases: list[str] = field(default_factory=list)
     adversarial_phrases: list[str] = field(default_factory=list)
+    # 只差声调的近音短语：合成出来只做评估，不参与训练（phrases.NEAR_HOMOPHONES 说明了为什么）
+    homophone_phrases: list[str] = field(default_factory=list)
     general_phrases: list[str] = field(default_factory=list)
     mandarin_phrases: list[str] = field(default_factory=list)
     english_phrases: list[str] = field(default_factory=list)
@@ -62,6 +64,9 @@ class DataConfig:
 
     def resolved_adversarial_phrases(self) -> list[str]:
         return self.adversarial_phrases or list(phrases.ADVERSARIAL)
+
+    def resolved_homophone_phrases(self) -> list[str]:
+        return self.homophone_phrases or list(phrases.NEAR_HOMOPHONES)
 
     def resolved_general_phrases(self) -> list[str]:
         return self.general_phrases or list(phrases.GENERAL_CANTONESE)

@@ -48,7 +48,8 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
   旁边同名 `.json` 记录训练数据、评估结果和配置。正样本训练时右对齐到 2 秒窗口末尾，所以 `phrases.py` 里
   正样本只能加前缀不能加后缀；负样本文本绝不能包含唤醒词（`tests/test_phrases.py` 守着）。
   语速的多样性全部来自 TTS 多档语速（到 +100%），训练时不做后处理变速（`p_speed` / `p_tempo` 都是 0）；
-  `augment.time_stretch`（WSOLA 变速不变调）只用在 `evaluate` 的快语速压力测试里。
+  `augment.time_stretch`（WSOLA 变速不变调）只用在 `evaluate` 的快语速压力测试里。只差一个声调的近音短语
+  （`phrases.NEAR_HOMOPHONES`）只合成来评估、不进训练：硬压它们会把同语速档的正样本一起压掉。
 - **线程模型**（`pipeline.py`）：主线程跑帧循环，每帧过唤醒检测与 VAD，喂 `dialog.Dialog`（纯状态机，只有主线程碰）
   并执行它吐出的命令；worker 线程做识别 / 应答 / 合成，通过事件队列汇报；Speaker 自带写线程；API 在自己的 loop 线程。
   回合有 `gen` 代号与 `cancelled` 标志，`speaker.say(pcm, gen)` 丢弃过期回合的音频——打断靠这个，别绕过它。

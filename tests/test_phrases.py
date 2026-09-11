@@ -18,12 +18,31 @@ def test_no_duplicates():
     for name in (
         "POSITIVE_VARIANTS",
         "ADVERSARIAL",
+        "NEAR_HOMOPHONES",
         "GENERAL_CANTONESE",
         "GENERAL_MANDARIN",
         "GENERAL_ENGLISH",
     ):
         items = getattr(phrases, name)
         assert len(items) == len(set(items)), name
+
+
+def test_near_homophones_are_kept_out_of_training():
+    assert not set(phrases.NEAR_HOMOPHONES) & set(phrases.ADVERSARIAL)
+    from training.wakeword.config import TrainingConfig
+    from training.wakeword.features import gather_samples
+    from training.wakeword.tts import ClipRecord, plan_jobs
+
+    cfg = TrainingConfig()
+    jobs = plan_jobs(cfg)
+    assert {j.label for j in jobs} == {"positive", "adversarial", "homophone", "general"}
+    records = [
+        ClipRecord(j.text, j.voice, j.rate, j.pitch, j.label, j.lang, f"{j.stem}.wav", 1.0, "train")
+        for j in jobs
+    ]
+    groups = gather_samples(cfg, records)
+    assert not any(s.kind == "homophone" for s in groups[("negative", "train")])
+    assert any(s.kind == "homophone" for s in groups[("negative", "val")])
 
 
 def test_plan_jobs_respects_limits_and_split():

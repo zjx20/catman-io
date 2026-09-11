@@ -47,7 +47,8 @@ python scripts/wakeword_model.py publish v3 --notes "改了什么、真机表现
 | 数据 | 来源 | 说明 |
 |---|---|---|
 | 正样本 | edge-tts zh-HK 三个音色 × 10 档语速（-20% 到 +100%）× 5 档音高 × 8 种读法（标点 / 前缀） | 1200 条 |
-| 对抗负样本 | `phrases.py` 手写：只说一半、换字、换调、换序、相似常用词 | 约 90 个短语 × 3 音色 × 4 语速 |
+| 对抗负样本 | `phrases.py` 手写：只说一半、换字、换序、相似常用词 | 约 80 个短语 × 3 音色 × 4 语速 |
+| 近音短语（只评估） | 只差一个声调 / 声母极近（燒貓人、小貓忍、小貓銀…），合成出来只算误接受，不训练 | 11 个短语 × 3 音色 × 4 语速 |
 | 普通负样本 | 130 句日常粤语 + 46 句普通话（zh-CN 音色）+ 20 句英语（en-US 音色） | |
 | 通用负样本特征 | openWakeWord 作者预计算的 ACAV100M 特征，按小时只下载开头一段（每小时约 15 MB） | `precomputed_negative_hours`，默认 100 小时 |
 | 误唤醒验证集 | openWakeWord 的 11 小时验证集特征（约 180 MB） | `fp_validation` |
@@ -110,7 +111,7 @@ v0 实测说得快时叫不醒：分数有起伏，但到不了阈值。真人�
 ```
 training/wakeword/
   configs/siu_maau_jan.yaml   训练配置
-  phrases.py                  文本清单（正样本读法、对抗负样本、日常句子）
+  phrases.py                  文本清单（正样本读法、对抗负样本、只评估的近音短语、日常句子）
   config.py                   配置 dataclass（所有键的默认值在这里）
   tts.py                      edge-tts 合成、解码、裁静音、manifest
   resources.py                下载 RIR / 验证集特征 / 通用负样本特征切片（HTTP Range）
