@@ -1,47 +1,86 @@
-# 「小貓人」（siu2 maau1 jan4）粤语唤醒词训练配置。
-# 所有键的默认值和含义见 training/wakeword/config.py。
+# v0 实际使用的训练配置（从模型元数据 config 段还原；当时仓库里的 YAML 已经改成 +30%/+40% 语速但没有重训）
 model_name: siu_maau_jan
 wake_phrase: 小貓人
 workdir: training/wakeword/work/siu_maau_jan
-
 tts:
-  voices: [zh-HK-HiuGaaiNeural, zh-HK-HiuMaanNeural, zh-HK-WanLungNeural]
-  # +30% / +40% 是为了语速快时也叫得醒（实测 v0 快说容易漏）
-  rates: ["-20%", "-10%", "+0%", "+10%", "+20%", "+30%", "+40%"]
-  pitches: ["-30Hz", "-15Hz", "+0Hz", "+15Hz", "+30Hz"]
-  negative_rates: ["-10%", "+0%", "+15%"]
-  negative_pitches: ["+0Hz"]
+  voices:
+  - zh-HK-HiuGaaiNeural
+  - zh-HK-HiuMaanNeural
+  - zh-HK-WanLungNeural
+  rates:
+  - -20%
+  - -10%
+  - +0%
+  - +10%
+  - +20%
+  pitches:
+  - -30Hz
+  - -15Hz
+  - +0Hz
+  - +15Hz
+  - +30Hz
+  negative_rates:
+  - -10%
+  - +0%
+  - +15%
+  negative_pitches:
+  - +0Hz
   other_language_voices:
-    zh-CN: [zh-CN-XiaoxiaoNeural, zh-CN-YunxiNeural]
-    en-US: [en-US-AriaNeural, en-US-GuyNeural]
-  concurrency: 4
-
+    zh-CN:
+    - zh-CN-XiaoxiaoNeural
+    - zh-CN-YunxiNeural
+    en-US:
+    - en-US-AriaNeural
+    - en-US-GuyNeural
+  concurrency: 6
+  retries: 5
+  trim_db: -45.0
+  max_positive_clips: 0
+  max_negative_clips: 0
 data:
-  # 留空 = 用 training/wakeword/phrases.py 里的默认清单
   positive_phrases: []
   adversarial_phrases: []
   general_phrases: []
-  # 真人录音（16 kHz 单声道 wav，或任意采样率会自动重采样）。哪怕只有几十条，也能明显提升真实环境的召回。
+  mandarin_phrases: []
+  english_phrases: []
   extra_positive_dirs: []
   extra_negative_dirs: []
   val_fraction: 0.15
-  # openWakeWord 预计算的通用负样本特征，按小时计下载（每小时约 15 MB）；0 = 不用。
-  # 20 小时时模型会死记训练负样本（通用音频每小时误唤醒 38 次），100 小时降到 0.2 次以下
   precomputed_negative_hours: 100
-  # 11 小时验证集特征（约 180 MB），用来估计每小时误唤醒次数并挑选检查点
   fp_validation: true
-
 augment:
   clip_seconds: 2.0
-  # 变速范围放宽到 1.3 倍，配合上面的快语速合成
-  speed_factors: [0.85, 0.9, 1.0, 1.1, 1.2, 1.3]
   rounds_positive: 8
   rounds_negative: 4
-  # 推荐：用目标设备在真实环境录几段噪声（电视、厨房、街声）放进来
   background_dirs: []
   rir_dirs: []
   download_rirs: true
-
+  speed_factors:
+  - 0.9
+  - 1.0
+  - 1.1
+  p_speed: 0.5
+  snr_db:
+  - -5.0
+  - 20.0
+  p_background: 0.75
+  p_colored_noise: 0.3
+  colored_snr_db:
+  - 5.0
+  - 30.0
+  p_babble: 0.2
+  babble_snr_db:
+  - 0.0
+  - 15.0
+  p_rir: 0.5
+  p_bandstop: 0.2
+  p_lowpass: 0.15
+  p_distortion: 0.15
+  peak_range:
+  - 0.05
+  - 1.0
+  end_jitter: 0.2
+  batch_size: 64
 train:
   layer_size: 32
   n_blocks: 1
@@ -50,6 +89,8 @@ train:
   batch_positive: 50
   batch_negative: 50
   batch_precomputed: 1024
-  max_negative_weight: 1500
+  lr: 0.0001
+  max_negative_weight: 1500.0
   target_fp_per_hour: 0.2
   seed: 0
+  threads: 0
