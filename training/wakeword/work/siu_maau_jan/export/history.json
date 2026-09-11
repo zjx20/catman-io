@@ -1,0 +1,602 @@
+[
+  {
+    "val_recall": 0.7378571629524231,
+    "val_fp": 128,
+    "val_acc": 0.8628048896789551,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 22500,
+    "loss": 0.996901273727417
+  },
+  {
+    "val_recall": 0.7350000143051147,
+    "val_fp": 141,
+    "val_acc": 0.8580931425094604,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 1,
+    "step": 22894,
+    "loss": 1.209566354751587
+  },
+  {
+    "val_recall": 0.7335714101791382,
+    "val_fp": 136,
+    "val_acc": 0.8589246273040771,
+    "fp_windows_per_hour": 0.09348803872482316,
+    "activations_per_hour": 0.09348803872482316,
+    "stage": 1,
+    "step": 23289,
+    "loss": 1.2839319705963135
+  },
+  {
+    "val_recall": 0.8064285516738892,
+    "val_fp": 179,
+    "val_acc": 0.8752771615982056,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 1,
+    "step": 23684,
+    "loss": 0.8488895893096924
+  },
+  {
+    "val_recall": 0.7357142567634583,
+    "val_fp": 133,
+    "val_acc": 0.8605875968933105,
+    "fp_windows_per_hour": 0.09348803872482316,
+    "activations_per_hour": 0.09348803872482316,
+    "stage": 1,
+    "step": 24078,
+    "loss": 0.8930763006210327
+  },
+  {
+    "val_recall": 0.7921428680419922,
+    "val_fp": 157,
+    "val_acc": 0.8758314847946167,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 1,
+    "step": 24473,
+    "loss": 0.8669072389602661
+  },
+  {
+    "val_recall": 0.7557142972946167,
+    "val_fp": 126,
+    "val_acc": 0.8702882528305054,
+    "fp_windows_per_hour": 0.09348803872482316,
+    "activations_per_hour": 0.09348803872482316,
+    "stage": 1,
+    "step": 24868,
+    "loss": 1.3659417629241943
+  },
+  {
+    "val_recall": 0.7749999761581421,
+    "val_fp": 142,
+    "val_acc": 0.8733370304107666,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 25262,
+    "loss": 0.4396253228187561
+  },
+  {
+    "val_recall": 0.7950000166893005,
+    "val_fp": 148,
+    "val_acc": 0.8794345855712891,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 1,
+    "step": 25657,
+    "loss": 0.8124381303787231
+  },
+  {
+    "val_recall": 0.800000011920929,
+    "val_fp": 151,
+    "val_acc": 0.8805432319641113,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 1,
+    "step": 26052,
+    "loss": 1.1565616130828857
+  },
+  {
+    "val_recall": 0.7107142806053162,
+    "val_fp": 116,
+    "val_acc": 0.8555986881256104,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 26446,
+    "loss": 1.457934856414795
+  },
+  {
+    "val_recall": 0.8107143044471741,
+    "val_fp": 163,
+    "val_acc": 0.881374716758728,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 1,
+    "step": 26841,
+    "loss": 0.5266738533973694
+  },
+  {
+    "val_recall": 0.779285728931427,
+    "val_fp": 140,
+    "val_acc": 0.8755543231964111,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 27236,
+    "loss": 0.4544408321380615
+  },
+  {
+    "val_recall": 0.8078571557998657,
+    "val_fp": 153,
+    "val_acc": 0.8830376863479614,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 27630,
+    "loss": 0.7666361331939697
+  },
+  {
+    "val_recall": 0.7914285659790039,
+    "val_fp": 152,
+    "val_acc": 0.876940131187439,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 28025,
+    "loss": 1.0785138607025146
+  },
+  {
+    "val_recall": 0.7907142639160156,
+    "val_fp": 152,
+    "val_acc": 0.8766629695892334,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 1,
+    "step": 28420,
+    "loss": 0.5580434203147888
+  },
+  {
+    "val_recall": 0.8028571605682373,
+    "val_fp": 157,
+    "val_acc": 0.8799889087677002,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 28814,
+    "loss": 0.51344233751297
+  },
+  {
+    "val_recall": 0.7964285612106323,
+    "val_fp": 158,
+    "val_acc": 0.8772172927856445,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 29209,
+    "loss": 0.9853970408439636
+  },
+  {
+    "val_recall": 0.7992857098579407,
+    "val_fp": 158,
+    "val_acc": 0.8783259391784668,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 29604,
+    "loss": 1.2951550483703613
+  },
+  {
+    "val_recall": 0.7992857098579407,
+    "val_fp": 158,
+    "val_acc": 0.8783259391784668,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 1,
+    "step": 29999,
+    "loss": 0.9859856963157654
+  },
+  {
+    "val_recall": 0.7992857098579407,
+    "val_fp": 158,
+    "val_acc": 0.8783259391784668,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 1,
+    "loss": 0.6259151101112366
+  },
+  {
+    "val_recall": 0.8128571510314941,
+    "val_fp": 164,
+    "val_acc": 0.8819290399551392,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 158,
+    "loss": 0.9935049414634705
+  },
+  {
+    "val_recall": 0.8328571319580078,
+    "val_fp": 185,
+    "val_acc": 0.8838691711425781,
+    "fp_windows_per_hour": 0.3739521548992926,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 316,
+    "loss": 0.9377440214157104
+  },
+  {
+    "val_recall": 0.854285717010498,
+    "val_fp": 199,
+    "val_acc": 0.8883037567138672,
+    "fp_windows_per_hour": 0.7479043097985852,
+    "activations_per_hour": 0.560928232348939,
+    "stage": 2,
+    "step": 474,
+    "loss": 1.024953842163086
+  },
+  {
+    "val_recall": 0.8235714435577393,
+    "val_fp": 173,
+    "val_acc": 0.8835920095443726,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 632,
+    "loss": 0.8115398287773132
+  },
+  {
+    "val_recall": 0.8357142806053162,
+    "val_fp": 179,
+    "val_acc": 0.8866407871246338,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 789,
+    "loss": 0.4950961768627167
+  },
+  {
+    "val_recall": 0.8399999737739563,
+    "val_fp": 179,
+    "val_acc": 0.8883037567138672,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 947,
+    "loss": 0.9238062500953674
+  },
+  {
+    "val_recall": 0.8421428799629211,
+    "val_fp": 181,
+    "val_acc": 0.8885809183120728,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 1105,
+    "loss": 0.9926281571388245
+  },
+  {
+    "val_recall": 0.8107143044471741,
+    "val_fp": 177,
+    "val_acc": 0.8774944543838501,
+    "fp_windows_per_hour": 0.09348803872482316,
+    "activations_per_hour": 0.09348803872482316,
+    "stage": 2,
+    "step": 1263,
+    "loss": 0.5531689524650574
+  },
+  {
+    "val_recall": 0.8235714435577393,
+    "val_fp": 164,
+    "val_acc": 0.8860864639282227,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 1421,
+    "loss": 0.7897307872772217
+  },
+  {
+    "val_recall": 0.8199999928474426,
+    "val_fp": 166,
+    "val_acc": 0.8841463327407837,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 1578,
+    "loss": 0.8189457654953003
+  },
+  {
+    "val_recall": 0.8264285922050476,
+    "val_fp": 176,
+    "val_acc": 0.8838691711425781,
+    "fp_windows_per_hour": 0.3739521548992926,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 1736,
+    "loss": 0.39723265171051025
+  },
+  {
+    "val_recall": 0.8078571557998657,
+    "val_fp": 159,
+    "val_acc": 0.881374716758728,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 1894,
+    "loss": 0.796201229095459
+  },
+  {
+    "val_recall": 0.8092857003211975,
+    "val_fp": 164,
+    "val_acc": 0.8805432319641113,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 2052,
+    "loss": 0.3437715172767639
+  },
+  {
+    "val_recall": 0.7921428680419922,
+    "val_fp": 146,
+    "val_acc": 0.8788802623748779,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 2210,
+    "loss": 0.7477135062217712
+  },
+  {
+    "val_recall": 0.7785714268684387,
+    "val_fp": 141,
+    "val_acc": 0.875,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 2,
+    "step": 2367,
+    "loss": 0.7761552333831787
+  },
+  {
+    "val_recall": 0.7892857193946838,
+    "val_fp": 148,
+    "val_acc": 0.8772172927856445,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 2,
+    "step": 2525,
+    "loss": 0.6119861006736755
+  },
+  {
+    "val_recall": 0.7992857098579407,
+    "val_fp": 153,
+    "val_acc": 0.8797117471694946,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 2,
+    "step": 2683,
+    "loss": 1.4057153463363647
+  },
+  {
+    "val_recall": 0.802142858505249,
+    "val_fp": 155,
+    "val_acc": 0.8802660703659058,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 2841,
+    "loss": 0.4409148693084717
+  },
+  {
+    "val_recall": 0.802142858505249,
+    "val_fp": 153,
+    "val_acc": 0.8808203935623169,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 2,
+    "step": 2999,
+    "loss": 0.8018343448638916
+  },
+  {
+    "val_recall": 0.802142858505249,
+    "val_fp": 153,
+    "val_acc": 0.8808203935623169,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 1,
+    "loss": 0.7146959900856018
+  },
+  {
+    "val_recall": 0.8035714030265808,
+    "val_fp": 156,
+    "val_acc": 0.8805432319641113,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 158,
+    "loss": 0.48381710052490234
+  },
+  {
+    "val_recall": 0.8064285516738892,
+    "val_fp": 160,
+    "val_acc": 0.8805432319641113,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 316,
+    "loss": 0.5495574474334717
+  },
+  {
+    "val_recall": 0.8142856955528259,
+    "val_fp": 166,
+    "val_acc": 0.8819290399551392,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 474,
+    "loss": 0.9725401401519775
+  },
+  {
+    "val_recall": 0.8192856907844543,
+    "val_fp": 167,
+    "val_acc": 0.8835920095443726,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 632,
+    "loss": 0.5477967858314514
+  },
+  {
+    "val_recall": 0.8221428394317627,
+    "val_fp": 171,
+    "val_acc": 0.8835920095443726,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 789,
+    "loss": 0.2089773267507553
+  },
+  {
+    "val_recall": 0.829285740852356,
+    "val_fp": 173,
+    "val_acc": 0.8858093023300171,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 947,
+    "loss": 0.760160505771637
+  },
+  {
+    "val_recall": 0.8299999833106995,
+    "val_fp": 175,
+    "val_acc": 0.8855321407318115,
+    "fp_windows_per_hour": 0.3739521548992926,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 1105,
+    "loss": 0.6319884061813354
+  },
+  {
+    "val_recall": 0.8328571319580078,
+    "val_fp": 176,
+    "val_acc": 0.8863636255264282,
+    "fp_windows_per_hour": 0.3739521548992926,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 1263,
+    "loss": 0.5010395050048828
+  },
+  {
+    "val_recall": 0.8299999833106995,
+    "val_fp": 176,
+    "val_acc": 0.885254979133606,
+    "fp_windows_per_hour": 0.3739521548992926,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 1421,
+    "loss": 0.5285950303077698
+  },
+  {
+    "val_recall": 0.8264285922050476,
+    "val_fp": 174,
+    "val_acc": 0.8844234943389893,
+    "fp_windows_per_hour": 0.3739521548992926,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 1578,
+    "loss": 0.7155186533927917
+  },
+  {
+    "val_recall": 0.8235714435577393,
+    "val_fp": 173,
+    "val_acc": 0.8835920095443726,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 1736,
+    "loss": 0.4969068467617035
+  },
+  {
+    "val_recall": 0.8242856860160828,
+    "val_fp": 172,
+    "val_acc": 0.8841463327407837,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 1894,
+    "loss": 0.5641566514968872
+  },
+  {
+    "val_recall": 0.8207142949104309,
+    "val_fp": 171,
+    "val_acc": 0.8830376863479614,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 2052,
+    "loss": 0.7881582975387573
+  },
+  {
+    "val_recall": 0.8207142949104309,
+    "val_fp": 171,
+    "val_acc": 0.8830376863479614,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 2210,
+    "loss": 0.9715723395347595
+  },
+  {
+    "val_recall": 0.8192856907844543,
+    "val_fp": 170,
+    "val_acc": 0.8827605247497559,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 2367,
+    "loss": 0.5591872334480286
+  },
+  {
+    "val_recall": 0.8178571462631226,
+    "val_fp": 170,
+    "val_acc": 0.8822062015533447,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 2525,
+    "loss": 0.4084223508834839
+  },
+  {
+    "val_recall": 0.816428542137146,
+    "val_fp": 169,
+    "val_acc": 0.8819290399551392,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 2683,
+    "loss": 0.812933087348938
+  },
+  {
+    "val_recall": 0.816428542137146,
+    "val_fp": 169,
+    "val_acc": 0.8819290399551392,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 2841,
+    "loss": 0.943391740322113
+  },
+  {
+    "val_recall": 0.816428542137146,
+    "val_fp": 169,
+    "val_acc": 0.8819290399551392,
+    "fp_windows_per_hour": 0.2804641161744695,
+    "activations_per_hour": 0.2804641161744695,
+    "stage": 3,
+    "step": 2999,
+    "loss": 0.8699055314064026
+  }
+]

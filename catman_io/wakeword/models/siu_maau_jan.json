@@ -1,0 +1,508 @@
+{
+  "model_name": "siu_maau_jan",
+  "wake_phrase": "小貓人",
+  "language": "yue (Cantonese)",
+  "input_shape": [
+    16,
+    96
+  ],
+  "framework": "openwakeword",
+  "trained_at": "2026-09-11T03:14:50Z",
+  "training_seconds": 1296.5,
+  "data": {
+    "positive_train": 8200,
+    "negative_train": 9168,
+    "positive_val": 1400,
+    "negative_val": 2208,
+    "precomputed_negatives": 281250,
+    "fp_validation_hours": 10.7
+  },
+  "selection": {
+    "selected": "single@2/1263",
+    "metrics": {
+      "val_recall": 0.8107143044471741,
+      "val_fp": 177,
+      "val_acc": 0.8774944543838501,
+      "fp_windows_per_hour": 0.09348803872482316,
+      "activations_per_hour": 0.09348803872482316,
+      "stage": 2,
+      "step": 1263,
+      "loss": 0.5531689524650574
+    },
+    "candidates": [
+      {
+        "name": "single@2/1263",
+        "metrics": {
+          "val_recall": 0.8107143044471741,
+          "val_fp": 177,
+          "val_acc": 0.8774944543838501,
+          "fp_windows_per_hour": 0.09348803872482316,
+          "activations_per_hour": 0.09348803872482316,
+          "stage": 2,
+          "step": 1263,
+          "loss": 0.5531689524650574
+        }
+      },
+      {
+        "name": "average_of_5",
+        "metrics": {
+          "val_recall": 0.8064285516738892,
+          "val_fp": 163,
+          "val_acc": 0.8797117471694946,
+          "fp_windows_per_hour": 0.1869760774496463,
+          "activations_per_hour": 0.1869760774496463
+        }
+      }
+    ]
+  },
+  "config": {
+    "model_name": "siu_maau_jan",
+    "wake_phrase": "小貓人",
+    "workdir": "training/wakeword/work/siu_maau_jan",
+    "tts": {
+      "voices": [
+        "zh-HK-HiuGaaiNeural",
+        "zh-HK-HiuMaanNeural",
+        "zh-HK-WanLungNeural"
+      ],
+      "rates": [
+        "-20%",
+        "-10%",
+        "+0%",
+        "+10%",
+        "+20%",
+        "+30%",
+        "+40%",
+        "+60%",
+        "+80%",
+        "+100%"
+      ],
+      "pitches": [
+        "-30Hz",
+        "-15Hz",
+        "+0Hz",
+        "+15Hz",
+        "+30Hz"
+      ],
+      "negative_rates": [
+        "-10%",
+        "+0%",
+        "+15%",
+        "+40%"
+      ],
+      "negative_pitches": [
+        "+0Hz"
+      ],
+      "other_language_voices": {
+        "zh-CN": [
+          "zh-CN-XiaoxiaoNeural",
+          "zh-CN-YunxiNeural"
+        ],
+        "en-US": [
+          "en-US-AriaNeural",
+          "en-US-GuyNeural"
+        ]
+      },
+      "concurrency": 4,
+      "retries": 5,
+      "trim_db": -45.0,
+      "max_positive_clips": 0,
+      "max_negative_clips": 0
+    },
+    "data": {
+      "positive_phrases": [],
+      "adversarial_phrases": [],
+      "homophone_phrases": [],
+      "general_phrases": [],
+      "mandarin_phrases": [],
+      "english_phrases": [],
+      "extra_positive_dirs": [],
+      "extra_negative_dirs": [],
+      "val_fraction": 0.15,
+      "precomputed_negative_hours": 100,
+      "fp_validation": true
+    },
+    "augment": {
+      "clip_seconds": 2.0,
+      "rounds_positive": 8,
+      "rounds_negative": 4,
+      "background_dirs": [],
+      "rir_dirs": [],
+      "download_rirs": true,
+      "speed_factors": [
+        0.9,
+        1.0,
+        1.1
+      ],
+      "p_speed": 0.0,
+      "tempo_range": [
+        0.9,
+        1.5
+      ],
+      "p_tempo": 0.0,
+      "min_seconds": 0.45,
+      "snr_db": [
+        -5.0,
+        20.0
+      ],
+      "p_background": 0.75,
+      "p_colored_noise": 0.3,
+      "colored_snr_db": [
+        5.0,
+        30.0
+      ],
+      "p_babble": 0.2,
+      "babble_snr_db": [
+        0.0,
+        15.0
+      ],
+      "p_rir": 0.5,
+      "p_bandstop": 0.2,
+      "p_lowpass": 0.15,
+      "p_distortion": 0.15,
+      "peak_range": [
+        0.05,
+        1.0
+      ],
+      "end_jitter": 0.2,
+      "batch_size": 64
+    },
+    "train": {
+      "layer_size": 32,
+      "n_blocks": 1,
+      "dropout": 0.1,
+      "steps": 30000,
+      "batch_positive": 50,
+      "batch_negative": 50,
+      "batch_precomputed": 1024,
+      "lr": 0.0001,
+      "max_negative_weight": 1500,
+      "target_fp_per_hour": 0.2,
+      "seed": 0,
+      "threads": 2
+    }
+  },
+  "evaluation": {
+    "clean": {
+      "n_positive": 175,
+      "n_negative": 400,
+      "recall@0.3": 1.0,
+      "recall@0.5": 1.0,
+      "recall@0.7": 1.0,
+      "recall@0.9": 0.9943,
+      "false_accept@0.3": 0.19,
+      "false_accept@0.5": 0.1775,
+      "false_accept@0.7": 0.1675,
+      "false_accept@0.9": 0.155,
+      "false_accept_by_kind@0.5": {
+        "adversarial": 0.0094,
+        "general": 0.0049,
+        "homophone": 0.7753
+      },
+      "recall_by_rate@0.5": {
+        "-20%": 1.0,
+        "-10%": 1.0,
+        "+0%": 1.0,
+        "+10%": 1.0,
+        "+20%": 1.0,
+        "+30%": 1.0,
+        "+40%": 1.0,
+        "+60%": 1.0,
+        "+80%": 1.0,
+        "+100%": 1.0
+      },
+      "positive_score_p10": 0.9813,
+      "positive_score_median": 0.9899,
+      "negative_score_p99": 0.9916
+    },
+    "top_false_accepts": [
+      {
+        "score": 0.993,
+        "text": "笑貓人"
+      },
+      {
+        "score": 0.992,
+        "text": "小貓銀"
+      },
+      {
+        "score": 0.992,
+        "text": "笑貓人"
+      },
+      {
+        "score": 0.992,
+        "text": "小貓忍"
+      },
+      {
+        "score": 0.992,
+        "text": "小貓引"
+      },
+      {
+        "score": 0.991,
+        "text": "笑貓人"
+      },
+      {
+        "score": 0.991,
+        "text": "小貓印"
+      },
+      {
+        "score": 0.991,
+        "text": "小貓忍"
+      },
+      {
+        "score": 0.991,
+        "text": "小貓忍"
+      },
+      {
+        "score": 0.99,
+        "text": "笑貓人"
+      },
+      {
+        "score": 0.99,
+        "text": "小貓恩"
+      },
+      {
+        "score": 0.99,
+        "text": "燒貓人"
+      },
+      {
+        "score": 0.99,
+        "text": "燒貓人"
+      },
+      {
+        "score": 0.99,
+        "text": "小貓恩"
+      },
+      {
+        "score": 0.99,
+        "text": "小貓忍"
+      },
+      {
+        "score": 0.989,
+        "text": "小貓印"
+      },
+      {
+        "score": 0.989,
+        "text": "小貓印"
+      },
+      {
+        "score": 0.989,
+        "text": "小茅人"
+      },
+      {
+        "score": 0.989,
+        "text": "燒貓人"
+      },
+      {
+        "score": 0.989,
+        "text": "小貓忍"
+      },
+      {
+        "score": 0.989,
+        "text": "秒貓人"
+      },
+      {
+        "score": 0.989,
+        "text": "小貓忍"
+      },
+      {
+        "score": 0.988,
+        "text": "小貌人"
+      },
+      {
+        "score": 0.988,
+        "text": "小貓引"
+      },
+      {
+        "score": 0.988,
+        "text": "燒貓人"
+      },
+      {
+        "score": 0.987,
+        "text": "小貓引"
+      },
+      {
+        "score": 0.987,
+        "text": "小貓忍"
+      },
+      {
+        "score": 0.986,
+        "text": "小貓銀"
+      },
+      {
+        "score": 0.986,
+        "text": "小貓引"
+      },
+      {
+        "score": 0.986,
+        "text": "小貓忍"
+      }
+    ],
+    "augmented": {
+      "n_positive": 175,
+      "n_negative": 400,
+      "recall@0.3": 0.9429,
+      "recall@0.5": 0.92,
+      "recall@0.7": 0.8914,
+      "recall@0.9": 0.8457,
+      "false_accept@0.3": 0.1925,
+      "false_accept@0.5": 0.1825,
+      "false_accept@0.7": 0.1725,
+      "false_accept@0.9": 0.15,
+      "false_accept_by_kind@0.5": {
+        "adversarial": 0.066,
+        "general": 0.0146,
+        "homophone": 0.7079
+      },
+      "recall_by_rate@0.5": {
+        "-20%": 1.0,
+        "-10%": 0.7778,
+        "+0%": 0.9048,
+        "+10%": 0.9091,
+        "+20%": 0.8125,
+        "+30%": 0.9333,
+        "+40%": 0.9524,
+        "+60%": 1.0,
+        "+80%": 1.0,
+        "+100%": 0.9375
+      },
+      "positive_score_p10": 0.6399,
+      "positive_score_median": 0.9877,
+      "negative_score_p99": 0.9909
+    },
+    "fast_x1.25": {
+      "n_positive": 175,
+      "n_negative": 400,
+      "recall@0.3": 0.9829,
+      "recall@0.5": 0.9829,
+      "recall@0.7": 0.96,
+      "recall@0.9": 0.9429,
+      "false_accept@0.3": 0.2,
+      "false_accept@0.5": 0.195,
+      "false_accept@0.7": 0.1775,
+      "false_accept@0.9": 0.1625,
+      "false_accept_by_kind@0.5": {
+        "adversarial": 0.0566,
+        "general": 0.0049,
+        "homophone": 0.7978
+      },
+      "recall_by_rate@0.5": {
+        "-20%": 1.0,
+        "-10%": 1.0,
+        "+0%": 1.0,
+        "+10%": 1.0,
+        "+20%": 1.0,
+        "+30%": 1.0,
+        "+40%": 0.9524,
+        "+60%": 1.0,
+        "+80%": 0.9333,
+        "+100%": 0.9375
+      },
+      "positive_score_p10": 0.9614,
+      "positive_score_median": 0.9894,
+      "negative_score_p99": 0.9909
+    },
+    "fast_x1.5": {
+      "n_positive": 175,
+      "n_negative": 400,
+      "recall@0.3": 0.9029,
+      "recall@0.5": 0.8914,
+      "recall@0.7": 0.8686,
+      "recall@0.9": 0.8229,
+      "false_accept@0.3": 0.215,
+      "false_accept@0.5": 0.21,
+      "false_accept@0.7": 0.195,
+      "false_accept@0.9": 0.1675,
+      "false_accept_by_kind@0.5": {
+        "adversarial": 0.066,
+        "general": 0.0098,
+        "homophone": 0.8427
+      },
+      "recall_by_rate@0.5": {
+        "-20%": 1.0,
+        "-10%": 1.0,
+        "+0%": 1.0,
+        "+10%": 0.9545,
+        "+20%": 1.0,
+        "+30%": 1.0,
+        "+40%": 1.0,
+        "+60%": 0.9286,
+        "+80%": 0.5333,
+        "+100%": 0.375
+      },
+      "positive_score_p10": 0.3381,
+      "positive_score_median": 0.9882,
+      "negative_score_p99": 0.9906
+    },
+    "fast_x1.75": {
+      "n_positive": 175,
+      "n_negative": 400,
+      "recall@0.3": 0.8229,
+      "recall@0.5": 0.8114,
+      "recall@0.7": 0.7943,
+      "recall@0.9": 0.72,
+      "false_accept@0.3": 0.2275,
+      "false_accept@0.5": 0.2125,
+      "false_accept@0.7": 0.2,
+      "false_accept@0.9": 0.1675,
+      "false_accept_by_kind@0.5": {
+        "adversarial": 0.0755,
+        "general": 0.0049,
+        "homophone": 0.8539
+      },
+      "recall_by_rate@0.5": {
+        "-20%": 1.0,
+        "-10%": 1.0,
+        "+0%": 0.9524,
+        "+10%": 0.9545,
+        "+20%": 0.875,
+        "+30%": 0.9333,
+        "+40%": 1.0,
+        "+60%": 0.7857,
+        "+80%": 0.4,
+        "+100%": 0.0
+      },
+      "positive_score_p10": 0.0045,
+      "positive_score_median": 0.9833,
+      "negative_score_p99": 0.9904
+    },
+    "fast_x2.0": {
+      "n_positive": 175,
+      "n_negative": 400,
+      "recall@0.3": 0.7257,
+      "recall@0.5": 0.6914,
+      "recall@0.7": 0.6743,
+      "recall@0.9": 0.6114,
+      "false_accept@0.3": 0.2075,
+      "false_accept@0.5": 0.1925,
+      "false_accept@0.7": 0.1725,
+      "false_accept@0.9": 0.1475,
+      "false_accept_by_kind@0.5": {
+        "adversarial": 0.0755,
+        "general": 0.0049,
+        "homophone": 0.764
+      },
+      "recall_by_rate@0.5": {
+        "-20%": 1.0,
+        "-10%": 1.0,
+        "+0%": 1.0,
+        "+10%": 0.9545,
+        "+20%": 0.75,
+        "+30%": 0.9333,
+        "+40%": 0.7143,
+        "+60%": 0.2143,
+        "+80%": 0.0,
+        "+100%": 0.0
+      },
+      "positive_score_p10": 0.0006,
+      "positive_score_median": 0.9676,
+      "negative_score_p99": 0.9905
+    },
+    "fp_validation": {
+      "hours": 10.7,
+      "activations_per_hour@0.3": 0.28,
+      "activations_per_hour@0.5": 0.093,
+      "activations_per_hour@0.7": 0.093,
+      "activations_per_hour@0.9": 0.0
+    }
+  }
+}

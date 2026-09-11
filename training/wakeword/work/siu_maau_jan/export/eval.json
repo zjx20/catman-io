@@ -1,0 +1,324 @@
+{
+  "model": "training/wakeword/work/siu_maau_jan/export/siu_maau_jan.onnx",
+  "clean": {
+    "n_positive": 175,
+    "n_negative": 400,
+    "recall@0.3": 1.0,
+    "recall@0.5": 1.0,
+    "recall@0.7": 1.0,
+    "recall@0.9": 0.9943,
+    "false_accept@0.3": 0.19,
+    "false_accept@0.5": 0.1775,
+    "false_accept@0.7": 0.1675,
+    "false_accept@0.9": 0.155,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.0094,
+      "general": 0.0049,
+      "homophone": 0.7753
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 1.0,
+      "+10%": 1.0,
+      "+20%": 1.0,
+      "+30%": 1.0,
+      "+40%": 1.0,
+      "+60%": 1.0,
+      "+80%": 1.0,
+      "+100%": 1.0
+    },
+    "positive_score_p10": 0.9813,
+    "positive_score_median": 0.9899,
+    "negative_score_p99": 0.9916
+  },
+  "top_false_accepts": [
+    {
+      "score": 0.993,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.992,
+      "text": "小貓銀"
+    },
+    {
+      "score": 0.992,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.992,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.992,
+      "text": "小貓引"
+    },
+    {
+      "score": 0.991,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.991,
+      "text": "小貓印"
+    },
+    {
+      "score": 0.991,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.991,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.99,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.99,
+      "text": "小貓恩"
+    },
+    {
+      "score": 0.99,
+      "text": "燒貓人"
+    },
+    {
+      "score": 0.99,
+      "text": "燒貓人"
+    },
+    {
+      "score": 0.99,
+      "text": "小貓恩"
+    },
+    {
+      "score": 0.99,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.989,
+      "text": "小貓印"
+    },
+    {
+      "score": 0.989,
+      "text": "小貓印"
+    },
+    {
+      "score": 0.989,
+      "text": "小茅人"
+    },
+    {
+      "score": 0.989,
+      "text": "燒貓人"
+    },
+    {
+      "score": 0.989,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.989,
+      "text": "秒貓人"
+    },
+    {
+      "score": 0.989,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.988,
+      "text": "小貌人"
+    },
+    {
+      "score": 0.988,
+      "text": "小貓引"
+    },
+    {
+      "score": 0.988,
+      "text": "燒貓人"
+    },
+    {
+      "score": 0.987,
+      "text": "小貓引"
+    },
+    {
+      "score": 0.987,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.986,
+      "text": "小貓銀"
+    },
+    {
+      "score": 0.986,
+      "text": "小貓引"
+    },
+    {
+      "score": 0.986,
+      "text": "小貓忍"
+    }
+  ],
+  "augmented": {
+    "n_positive": 175,
+    "n_negative": 400,
+    "recall@0.3": 0.9429,
+    "recall@0.5": 0.92,
+    "recall@0.7": 0.8914,
+    "recall@0.9": 0.8457,
+    "false_accept@0.3": 0.1925,
+    "false_accept@0.5": 0.1825,
+    "false_accept@0.7": 0.1725,
+    "false_accept@0.9": 0.15,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.066,
+      "general": 0.0146,
+      "homophone": 0.7079
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 0.7778,
+      "+0%": 0.9048,
+      "+10%": 0.9091,
+      "+20%": 0.8125,
+      "+30%": 0.9333,
+      "+40%": 0.9524,
+      "+60%": 1.0,
+      "+80%": 1.0,
+      "+100%": 0.9375
+    },
+    "positive_score_p10": 0.6399,
+    "positive_score_median": 0.9877,
+    "negative_score_p99": 0.9909
+  },
+  "fast_x1.25": {
+    "n_positive": 175,
+    "n_negative": 400,
+    "recall@0.3": 0.9829,
+    "recall@0.5": 0.9829,
+    "recall@0.7": 0.96,
+    "recall@0.9": 0.9429,
+    "false_accept@0.3": 0.2,
+    "false_accept@0.5": 0.195,
+    "false_accept@0.7": 0.1775,
+    "false_accept@0.9": 0.1625,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.0566,
+      "general": 0.0049,
+      "homophone": 0.7978
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 1.0,
+      "+10%": 1.0,
+      "+20%": 1.0,
+      "+30%": 1.0,
+      "+40%": 0.9524,
+      "+60%": 1.0,
+      "+80%": 0.9333,
+      "+100%": 0.9375
+    },
+    "positive_score_p10": 0.9614,
+    "positive_score_median": 0.9894,
+    "negative_score_p99": 0.9909
+  },
+  "fast_x1.5": {
+    "n_positive": 175,
+    "n_negative": 400,
+    "recall@0.3": 0.9029,
+    "recall@0.5": 0.8914,
+    "recall@0.7": 0.8686,
+    "recall@0.9": 0.8229,
+    "false_accept@0.3": 0.215,
+    "false_accept@0.5": 0.21,
+    "false_accept@0.7": 0.195,
+    "false_accept@0.9": 0.1675,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.066,
+      "general": 0.0098,
+      "homophone": 0.8427
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 1.0,
+      "+10%": 0.9545,
+      "+20%": 1.0,
+      "+30%": 1.0,
+      "+40%": 1.0,
+      "+60%": 0.9286,
+      "+80%": 0.5333,
+      "+100%": 0.375
+    },
+    "positive_score_p10": 0.3381,
+    "positive_score_median": 0.9882,
+    "negative_score_p99": 0.9906
+  },
+  "fast_x1.75": {
+    "n_positive": 175,
+    "n_negative": 400,
+    "recall@0.3": 0.8229,
+    "recall@0.5": 0.8114,
+    "recall@0.7": 0.7943,
+    "recall@0.9": 0.72,
+    "false_accept@0.3": 0.2275,
+    "false_accept@0.5": 0.2125,
+    "false_accept@0.7": 0.2,
+    "false_accept@0.9": 0.1675,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.0755,
+      "general": 0.0049,
+      "homophone": 0.8539
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 0.9524,
+      "+10%": 0.9545,
+      "+20%": 0.875,
+      "+30%": 0.9333,
+      "+40%": 1.0,
+      "+60%": 0.7857,
+      "+80%": 0.4,
+      "+100%": 0.0
+    },
+    "positive_score_p10": 0.0045,
+    "positive_score_median": 0.9833,
+    "negative_score_p99": 0.9904
+  },
+  "fast_x2.0": {
+    "n_positive": 175,
+    "n_negative": 400,
+    "recall@0.3": 0.7257,
+    "recall@0.5": 0.6914,
+    "recall@0.7": 0.6743,
+    "recall@0.9": 0.6114,
+    "false_accept@0.3": 0.2075,
+    "false_accept@0.5": 0.1925,
+    "false_accept@0.7": 0.1725,
+    "false_accept@0.9": 0.1475,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.0755,
+      "general": 0.0049,
+      "homophone": 0.764
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 1.0,
+      "+10%": 0.9545,
+      "+20%": 0.75,
+      "+30%": 0.9333,
+      "+40%": 0.7143,
+      "+60%": 0.2143,
+      "+80%": 0.0,
+      "+100%": 0.0
+    },
+    "positive_score_p10": 0.0006,
+    "positive_score_median": 0.9676,
+    "negative_score_p99": 0.9905
+  },
+  "fp_validation": {
+    "hours": 10.7,
+    "activations_per_hour@0.3": 0.28,
+    "activations_per_hour@0.5": 0.093,
+    "activations_per_hour@0.7": 0.093,
+    "activations_per_hour@0.9": 0.0
+  }
+}
