@@ -42,8 +42,15 @@ def repo(tmp_path: Path) -> Path:
     (repo / "catman_io/wakeword/models/VERSION").write_text("v1\n")
     (repo / "training/wakeword/configs").mkdir(parents=True)
     cfg = repo / "training/wakeword/configs/siu_maau_jan.yaml"
-    cfg.write_text("workdir: training/wakeword/work/tiny\n")
-    (repo / ".gitignore").write_text("training/wakeword/work/\ncatman_io/wakeword/models/*.onnx\n")
+    cfg.write_text(
+        "workdir: training/wakeword/work/tiny\n"
+        "data:\n"
+        "  extra_positive_dirs: [training/wakeword/real/tiny/positive]\n"
+        "  extra_positive_val_dirs: [training/wakeword/real/tiny/positive_val]\n"
+    )
+    (repo / ".gitignore").write_text(
+        "training/wakeword/work/\ntraining/wakeword/real/\ncatman_io/wakeword/models/*.onnx\n"
+    )
     git(repo, "add", ".")
     git(repo, "commit", "-q", "-m", "code")
     git(repo, "push", "-q", "origin", "main")
@@ -68,6 +75,11 @@ def repo(tmp_path: Path) -> Path:
     (work / "clips/manifest.jsonl").write_text("{}\n")
     (work / "resources/big.npy").write_bytes(b"\0" * 32)
     (work / "features/positive_train.npy").write_bytes(b"\0" * 32)
+    # 配置引用的真人录音目录（gitignore 了，但发布时要跟着版本走）
+    for sub in ("positive/male", "positive_val/male"):
+        (repo / "training/wakeword/real/tiny" / sub).mkdir(parents=True)
+    (repo / "training/wakeword/real/tiny/positive/male/1.wav").write_bytes(b"RIFF" + b"\1" * 64)
+    (repo / "training/wakeword/real/tiny/positive_val/male/2.wav").write_bytes(b"RIFF" + b"\2" * 64)
     return repo
 
 
@@ -83,7 +95,10 @@ def test_publish_pull_roundtrip(repo: Path, tmp_path: Path):
     assert "training/wakeword/work/tiny/clips/positive_x.wav" in files
     assert "training/wakeword/work/tiny/export/tiny.onnx" in files
     assert "MODEL.md" in files and "training/wakeword/configs/siu_maau_jan.yaml" in files
+    assert "training/wakeword/real/tiny/positive/male/1.wav" in files
+    assert "training/wakeword/real/tiny/positive_val/male/2.wav" in files
     assert not any("/resources/" in f or "/features/" in f for f in files)
+    assert "training/wakeword/real/tiny" in git(repo, "log", "-1", "--format=%B", "models/wakeword/v1")
     # 工作区与当前分支没被动过
     assert git(repo, "rev-parse", "--abbrev-ref", "HEAD").strip() == "main"
     assert git(repo, "status", "--porcelain").strip() == ""
@@ -116,4 +131,15 @@ def test_publish_without_data_and_bad_version(repo: Path):
     files = set(git(repo, "ls-tree", "-r", "--name-only", "models/wakeword/v2").splitlines())
     assert "catman_io/wakeword/models/tiny.onnx" in files
     assert "training/wakeword/work/tiny/export/tiny.json" in files
-    assert not any("/clips/" in f for f in files)
+    assert not any("/clips/" in f or "/real/" in f for f in files)
+
+    # 配置引用的录音目录不存在 / 不在仓库里：报错，不能悄悄发布一个缺数据的版本
+    cfg = repo / "training/wakeword/configs/siu_maau_jan.yaml"
+    cfg.write_text(
+        "workdir: training/wakeword/work/tiny\ndata:\n  extra_positive_dirs: [training/wakeword/real/nope]\n"
+    )
+    r = run(repo, "publish", "v3", check=False)
+    assert r.returncode != 0 and "does not exist" in r.stderr
+    cfg.write_text(f"workdir: training/wakeword/work/tiny\ndata:\n  extra_positive_dirs: ['{repo.parent}']\n")
+    r = run(repo, "publish", "v3", check=False)
+    assert r.returncode != 0 and "outside the repository" in r.stderr

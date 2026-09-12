@@ -13,6 +13,8 @@ dist/
 
 # 训练产物（音频、特征、检查点）体积大，不进仓库；导出的最终模型手动 install 到 catman_io/wakeword/models/
 training/wakeword/work/
+# 真人录音（训练配置 data.extra_*_dirs 指向这里）：不进代码分支，publish 时随模型版本分支一起带走
+training/wakeword/real/
 /data/
 
 # 唤醒词模型文件不进代码分支：每个版本在 models/wakeword/<版本> 分支里（代码 + 模型 + 训练数据），

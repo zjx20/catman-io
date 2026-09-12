@@ -4,7 +4,9 @@
    分别在"干净"和"增强后"的片段上算各阈值下的召回率 / 负样本误接受率；
 2. 快语速压力测试：把干净片段用 WSOLA 变速不变调压到 1.25～2 倍速（音高不变，只是说得快），
    看召回掉多少——真人快说「小貓人」大约只有半秒，比 TTS 正常语速快一倍；
-3. 在 11 小时通用音频特征上算每小时误唤醒次数（上升沿计数）。
+3. 真人录音验证集（`data.extra_*_val_dirs`）：整条录音不裁、不增强，流式打分，按说话人（子目录）报召回，
+   并列出漏掉的那几条——这一栏最接近真机；
+4. 在 11 小时通用音频特征上算每小时误唤醒次数（上升沿计数）。
 结果写到 <export_dir>/eval.json，同时打印一张表，方便选阈值。
 """
 
@@ -16,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .augment import time_stretch, to_int16
+from .augment import load_audio_16k, time_stretch, to_int16
 from .config import TrainingConfig
 from .features import build_augmenter, gather_samples, load_sample_audio
 from .model import onnx_predictor
@@ -85,8 +87,10 @@ def run_evaluation(
         idx = rng.permutation(len(samples))[:n]
         return [samples[i] for i in idx]
 
-    pos = pick(groups[("positive", "val")], max_clips)
-    neg = pick(groups[("negative", "val")], max_clips)
+    # 合成片段抽 max_clips 条；真人录音验证集太宝贵，全部都要
+    real_pos, real_neg = groups["extra_positive_val"], groups["extra_negative_val"]
+    pos = real_pos + pick(groups["positive_val"], max_clips)
+    neg = real_neg + pick(groups["negative_val"], max_clips)
     if not pos or not neg:
         raise SystemExit("validation split is empty; check val_fraction / manifest")
 
@@ -135,6 +139,8 @@ def run_evaluation(
                 ((float(sc), s.text) for s, sc in zip(neg, ns, strict=True) if sc >= 0.5), reverse=True
             )
             result["top_false_accepts"] = [{"score": round(sc, 3), "text": t} for sc, t in accepted[:30]]
+    if real_pos or real_neg:
+        result["real"] = real_recordings(model_path, real_pos, real_neg)
     if validation is not None and Path(validation).exists():
         result["fp_validation"] = fp_per_hour(model_path, Path(validation))
 
@@ -148,6 +154,30 @@ def run_evaluation(
     print(format_report(result))
     log.info("wrote %s", out)
     return result
+
+
+def real_recordings(model_path: Path, pos: list, neg: list) -> dict:
+    """真人录音验证集：整条录音原样流式打分（不裁静音、不增强），和真机上听到的一样。"""
+    ps = clip_scores(model_path, [to_int16(load_audio_16k(s.path)) for s in pos])
+    ns = clip_scores(model_path, [to_int16(load_audio_16k(s.path)) for s in neg])
+    voices = sorted({s.voice for s in pos})
+    out: dict = {"n_positive": len(ps), "n_negative": len(ns)}
+    if len(ps):
+        out.update({f"recall@{t}": round(float((ps >= t).mean()), 4) for t in THRESHOLDS})
+        out["recall_by_voice@0.5"] = {
+            v: round(float(np.mean([sc >= 0.5 for s, sc in zip(pos, ps, strict=True) if s.voice == v])), 4)
+            for v in voices
+        }
+        out["positive_score_median"] = round(float(np.median(ps)), 4)
+        out["missed@0.5"] = [
+            {"clip": f"{s.voice}/{s.path.name}", "score": round(float(sc), 3)}
+            for s, sc in sorted(zip(pos, ps, strict=True), key=lambda x: x[1])
+            if sc < 0.5
+        ]
+    if len(ns):
+        out.update({f"false_accept@{t}": round(float((ns >= t).mean()), 4) for t in THRESHOLDS})
+        out["negative_score_p99"] = round(float(np.percentile(ns, 99)), 4)
+    return out
 
 
 def _rate_key(rate: str) -> float:
@@ -170,7 +200,9 @@ def format_report(r: dict) -> str:
     if fast:
         lines.append("")
         lines.append("fast-speech stress test (clean clips time-stretched, pitch kept):")
-        lines.append(f"{'set':<11}{'recall@.3':>10}{'recall@.5':>10}{'recall@.7':>10}{'median':>8}{'fa@.5':>8}")
+        lines.append(
+            f"{'set':<11}{'recall@.3':>10}{'recall@.5':>10}{'recall@.7':>10}{'median':>8}{'fa@.5':>8}"
+        )
         for name in fast:
             m = r[name]
             lines.append(
@@ -198,6 +230,32 @@ def format_report(r: dict) -> str:
     if r.get("top_false_accepts"):
         top = "; ".join(f"{d['text']} ({d['score']:.2f})" for d in r["top_false_accepts"][:8])
         lines.append("most accepted negatives: " + top)
+    real = r.get("real")
+    if real:
+        lines.append("")
+        lines.append(
+            f"real recordings (whole clips, streaming): {real['n_positive']} positive, "
+            f"{real['n_negative']} negative"
+        )
+        if real["n_positive"]:
+            lines.append(
+                "  recall: "
+                + "  ".join(f"@{t} {real[f'recall@{t}']:.3f}" for t in THRESHOLDS)
+                + f"  (median score {real['positive_score_median']:.3f})"
+            )
+            lines.append(
+                "  recall@0.5 by speaker: "
+                + ", ".join(f"{k} {v:.3f}" for k, v in real["recall_by_voice@0.5"].items())
+            )
+            if real["missed@0.5"]:
+                lines.append(
+                    "  missed@0.5: "
+                    + ", ".join(f"{d['clip']} ({d['score']:.2f})" for d in real["missed@0.5"])
+                )
+        if real["n_negative"]:
+            lines.append(
+                "  false-accept: " + "  ".join(f"@{t} {real[f'false_accept@{t}']:.3f}" for t in THRESHOLDS)
+            )
     if "fp_validation" in r:
         fv = r["fp_validation"]
         lines.append("")

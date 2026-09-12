@@ -143,8 +143,8 @@ openWakeWord 官方的训练流程只支持英语，本仓库把它改成了粤�
 [training/wakeword/README.md](training/wakeword/README.md)。
 
 **模型有版本，不放在代码分支里。** 每个版本一条 `models/wakeword/<版本>` 分支，里面是训练它的那份代码、
-模型文件（`catman_io/wakeword/models/siu_maau_jan.onnx` + 同名 `.json`，约 200 KB）、训练用的合成片段和一份
-自动生成的说明 `MODEL.md`；`catman_io/wakeword/models/VERSION` 写着当前代码推荐的版本。
+模型文件（`catman_io/wakeword/models/siu_maau_jan.onnx` + 同名 `.json`，约 200 KB）、训练用的合成片段与真人录音
+和一份自动生成的说明 `MODEL.md`；`catman_io/wakeword/models/VERSION` 写着当前代码推荐的版本。
 
 ```bash
 python scripts/wakeword_model.py list      # 有哪些版本

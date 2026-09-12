@@ -13,7 +13,7 @@ train      训练小分类器、按每小时误唤醒挑检查点、导出 ONNX 
 evaluate   在验证集音频上流式跑一遍，给出各阈值下的召回率 / 误接受率 / 每小时误唤醒，
            并把干净片段压到 1.25～2 倍速（WSOLA，音高不变）做快语速压力测试
 install    把 ONNX 和元数据复制到 catman_io/wakeword/models/（本机试用；代码分支不收模型文件）
-publish    scripts/wakeword_model.py publish v3 ...：把代码 + 模型 + 合成片段发布成 models/wakeword/v3 分支
+publish    scripts/wakeword_model.py publish v3 ...：把代码 + 模型 + 合成片段 + 真人录音发布成 models/wakeword/v3 分支
 ```
 
 ```bash
@@ -30,8 +30,9 @@ python scripts/wakeword_model.py publish v3 --notes "改了什么、真机表现
 
 模型二进制不进代码分支，每个版本一条 `models/wakeword/<版本>` 分支：训练它的代码提交之上加一个提交，
 装进 `catman_io/wakeword/models/` 下的 `.onnx` / `.json`、训练配置 YAML、`training/wakeword/work/<名字>/` 下的
-合成片段与 `export/`（`resources/` 可重复下载、`features/` 可重算，不进），以及根目录自动生成的 `MODEL.md`
-（训练配置摘要、评估、你写的说明）。`publish` 用 git 底层命令直接造这个提交，不碰工作区、不切分支；
+合成片段与 `export/`（`resources/` 可重复下载、`features/` 可重算，不进）、配置里引用的真人录音 / 环境噪声目录
+（`data.extra_*_dirs`、`augment.background_dirs` 等），以及根目录自动生成的 `MODEL.md`（训练配置摘要、评估、
+你写的说明）。`publish` 用 git 底层命令直接造这个提交，不碰工作区、不切分支；
 `pull` 用部分克隆只拉模型那两个文件。要复现或在同一批数据上改配置重训，`git checkout models/wakeword/v2`
 后跑 `resources`（补下载）→ `features` → `train` 即可。代码分支里 `catman_io/wakeword/models/VERSION`
 写着推荐版本，`pull` 不带参数就取它。真机测试的结论请写进 `--notes`，合成验证集的数字不能代替它。
@@ -62,11 +63,23 @@ python scripts/wakeword_model.py publish v3 --notes "改了什么、真机表现
 
 合成语音只有三个说话人，真实场景的差距主要来自说话人、麦克风和房间。按收益排序：
 
-1. **真人录音正样本**：用目标设备录几十条不同人、不同距离、不同语气的「小貓人」，
-   放到一个目录，配到 `data.extra_positive_dirs`。真录音会以 3 倍轮数参与增强。
+1. **真人录音正样本**：用目标设备录几十条不同人、不同距离、不同语气的「小貓人」（`catman-io webdemo` 的
+   "保存最近 3 秒"就是干这个的，存下来的样本在页面里能回放、能删），按说话人分子目录放到
+   `training/wakeword/real/<模型名>/positive/<说话人>/`，每位说话人再随机挑几条挪到 `positive_val/<说话人>/`：
+
+   ```yaml
+   data:
+     extra_positive_dirs: [training/wakeword/real/siu_maau_jan/positive]          # 全部训练
+     extra_positive_val_dirs: [training/wakeword/real/siu_maau_jan/positive_val]  # 只验证
+     extra_positive_weight: 3      # 相对合成片段的增强轮数倍率
+   ```
+
+   真人录音的特征单独存（`features/extra_*.npy`），重新划分或改权重不用重算合成片段；`evaluate` 会把验证集里的
+   录音整条、不裁、不增强地流式打分，按说话人报召回并列出漏掉的那几条——这一栏最接近真机，合成集的数字
+   只能做参考。`publish` 会把配置里引用的录音目录一起放进版本分支（录音没法重新下载，必须跟着版本走）。
 2. **真实环境噪声**：用目标设备录几段电视、厨房、街声、空调，配到 `augment.background_dirs`。
-3. **误唤醒录音**：把日常对话、电视声录下来放到 `data.extra_negative_dirs`；
-   如果线上出现了具体的误唤醒句子，把那句话加进 `data.adversarial_phrases`。
+3. **误唤醒录音**：把日常对话、电视声录下来放到 `data.extra_negative_dirs`（想量误接受就分一些到
+   `extra_negative_val_dirs`）；如果线上出现了具体的误唤醒句子，把那句话加进 `data.adversarial_phrases`。
 4. 调阈值：`evaluate` 会打印各阈值下的召回率和每小时误唤醒，按需要在 `catman-io wake -t` 里调。
 
 ## 已经试过的配置

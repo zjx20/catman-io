@@ -40,7 +40,8 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
   （gitignore），`install` 只是把导出复制到 `catman_io/wakeword/models/` 供本机测试。
 - **模型版本管理**：模型二进制不进代码分支。每个版本一条 `models/wakeword/<版本>` 分支 = 训练它的代码提交 +
   一个提交（`catman_io/wakeword/models/*.onnx|json`、训练配置、`training/wakeword/work/<名字>/` 下的合成片段与
-  export；可重复下载的 `resources/` 和可重算的 `features/` 不进），根目录 `MODEL.md` 是自动生成的版本说明。
+  export、配置里引用的真人录音目录；可重复下载的 `resources/` 和可重算的 `features/` 不进），根目录 `MODEL.md`
+  是自动生成的版本说明。
   `catman_io/wakeword/models/VERSION` 写着代码推荐的版本，`scripts/wakeword_model.py pull` 只取模型文件（部分克隆），
   `publish v3 --notes ... --push` 发布新版本，`git checkout models/wakeword/v2` 可复现或重训。CI 也靠 `pull` 拿模型；
   没模型时相关测试自动跳过。合成验证集的数字不能代替真机测试（v1 合成集全面领先 v0，真机反而更差）。
@@ -50,6 +51,9 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
   语速的多样性全部来自 TTS 多档语速（到 +100%），训练时不做后处理变速（`p_speed` / `p_tempo` 都是 0）；
   `augment.time_stretch`（WSOLA 变速不变调）只用在 `evaluate` 的快语速压力测试里。只差一个声调的近音短语
   （`phrases.NEAR_HOMOPHONES`）只合成来评估、不进训练：硬压它们会把同语速档的正样本一起压掉。
+  真人录音放 `training/wakeword/real/<模型名>/positive/<说话人>/`（gitignore，publish 时随版本分支走），
+  `data.extra_positive_dirs` 全部训练、`extra_positive_val_dirs` 只验证（每位说话人随机留几条），特征单独存成
+  `features/extra_*.npy`；`evaluate` 的「real recordings」一栏是整条录音流式打分，最接近真机。
 - **线程模型**（`pipeline.py`）：主线程跑帧循环，每帧过唤醒检测与 VAD，喂 `dialog.Dialog`（纯状态机，只有主线程碰）
   并执行它吐出的命令；worker 线程做识别 / 应答 / 合成，通过事件队列汇报；Speaker 自带写线程；API 在自己的 loop 线程。
   回合有 `gen` 代号与 `cancelled` 标志，`speaker.say(pcm, gen)` 丢弃过期回合的音频——打断靠这个，别绕过它。

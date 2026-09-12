@@ -1,7 +1,7 @@
 # 唤醒词模型放哪
 
 这个目录在代码分支里是空的（只有本说明和 `VERSION`）。模型文件（`siu_maau_jan.onnx` + 同名 `.json`）
-和训练它的代码、合成数据一起放在 `models/wakeword/<版本>` 分支里，每个版本一条分支：
+和训练它的代码、合成数据、真人录音一起放在 `models/wakeword/<版本>` 分支里，每个版本一条分支：
 
 ```bash
 python scripts/wakeword_model.py pull          # 取 VERSION 里写的推荐版本到这个目录

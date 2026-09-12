@@ -6,6 +6,8 @@
 - ``catman_io/wakeword/models/<模型名>.onnx`` / ``.json``（模型与元数据：训练数据量、配置、评估）
 - ``training/wakeword/work/<名字>/``（合成片段、manifest、export 里的导出产物；
   ``resources/`` 这种可重复下载的、``features/`` 这种可重算的不进来）
+- 配置里引用的真人录音 / 环境噪声目录（``data.extra_*_dirs``、``augment.background_dirs`` 等，
+  录了就没法再下载，必须跟着版本走；目录要在仓库里）
 - 训练用的配置 YAML 与根目录的 ``MODEL.md``（版本说明，自动生成）
 
 主分支（代码）不带模型二进制，只有 ``catman_io/wakeword/models/VERSION`` 指向推荐版本。
@@ -148,9 +150,15 @@ def summary_lines(meta: dict) -> list[str]:
     if meta.get("trained_at"):
         lines.append(f"训练时间：{meta['trained_at']}，{meta.get('training_seconds', '?')} s")
     if data:
+        real = data.get("real_recordings") or {}
+        real_note = (
+            f"其中真人录音 {real.get('positive_train')} / {real.get('negative_train')}，"
+            if real.get("positive_train") or real.get("negative_train")
+            else ""
+        )
         lines.append(
-            f"训练数据：正样本 {data.get('positive_train')} / 负样本 {data.get('negative_train')}（增强后），"
-            f"通用负样本 {data.get('precomputed_negatives')} 段，"
+            f"训练数据：正样本 {data.get('positive_train')} / 负样本 {data.get('negative_train')}（增强后，"
+            f"{real_note}通用负样本 {data.get('precomputed_negatives')} 段），"
             f"误唤醒验证集 {data.get('fp_validation_hours')} h"
         )
     tts, aug, train = cfg.get("tts", {}), cfg.get("augment", {}), cfg.get("train", {})
@@ -187,6 +195,14 @@ def summary_lines(meta: dict) -> list[str]:
         kinds = _get(ev, "clean", "false_accept_by_kind@0.5", default={})
         if kinds:
             lines.append("误接受@0.5：" + "，".join(f"{k} {v:.1%}" for k, v in kinds.items()))
+        real = ev.get("real", {})
+        if real.get("n_positive"):
+            by_voice = "，".join(f"{k} {v:.1%}" for k, v in real.get("recall_by_voice@0.5", {}).items())
+            lines.append(
+                f"真人录音召回@0.5：{real['recall@0.5']:.1%}（{real['n_positive']} 条"
+                + (f"；{by_voice}" if by_voice else "")
+                + "）"
+            )
         fv = ev.get("fp_validation", {})
         if fv:
             lines.append(
@@ -277,11 +293,46 @@ def cmd_pull(args) -> int:
     return 0
 
 
-def _workdir_from_config(config: Path) -> Path:
+# 配置里这些键指向的目录是录来的数据（真人录音、房间噪声、自己测的冲激响应），跟模型一起进版本分支
+DATA_DIR_KEYS = (
+    ("data", "extra_positive_dirs"),
+    ("data", "extra_negative_dirs"),
+    ("data", "extra_positive_val_dirs"),
+    ("data", "extra_negative_val_dirs"),
+    ("augment", "background_dirs"),
+    ("augment", "rir_dirs"),
+)
+
+
+def _config_paths(config: Path) -> tuple[Path, list[Path]]:
+    """训练配置里的 workdir 和它引用的数据目录（都是相对仓库根目录的相对路径，或绝对路径）。"""
     import yaml
 
     raw = yaml.safe_load(config.read_text(encoding="utf-8")) or {}
-    return Path(raw.get("workdir") or "training/wakeword/work/siu_maau_jan")
+    workdir = Path(raw.get("workdir") or "training/wakeword/work/siu_maau_jan")
+    dirs: list[Path] = []
+    for section, key in DATA_DIR_KEYS:
+        for d in (raw.get(section) or {}).get(key) or []:
+            if Path(d) not in dirs:
+                dirs.append(Path(d))
+    return workdir, dirs
+
+
+def _data_dir_files(repo: Path, dirs: list[Path]) -> dict[str, Path]:
+    """{分支里的路径: 本地文件}。目录不在仓库里就带不走，报错让人先挪进来。"""
+    files: dict[str, Path] = {}
+    for d in dirs:
+        local = d if d.is_absolute() else repo / d
+        if not local.is_dir():
+            raise SystemExit(f"data directory in config does not exist: {d}")
+        try:
+            rel = local.resolve().relative_to(repo.resolve())
+        except ValueError:
+            raise SystemExit(f"data directory {d} is outside the repository; move it inside first") from None
+        for p in sorted(local.rglob("*")):
+            if p.is_file():
+                files[(rel / p.relative_to(local)).as_posix()] = p
+    return files
 
 
 def cmd_publish(args) -> int:
@@ -290,7 +341,7 @@ def cmd_publish(args) -> int:
     config = args.config if args.config.is_absolute() else args.repo / args.config
     if not config.exists():
         raise SystemExit(f"config not found: {config}")
-    workdir = _workdir_from_config(config)
+    workdir, data_dirs = _config_paths(config)
     workdir_abs = workdir if workdir.is_absolute() else args.repo / workdir
     export = args.src if args.src else workdir_abs / "export"
     export = export if export.is_absolute() else args.repo / export
@@ -331,11 +382,15 @@ def cmd_publish(args) -> int:
     for p in sorted(export.iterdir()):
         if p.is_file() and not p.name.endswith(".tmp.npy"):
             files[(workdir / "export" / p.name).as_posix()] = p
-    if not args.no_data and workdir_abs.exists():
-        for p in sorted(workdir_abs.rglob("*")):
-            rel = p.relative_to(workdir_abs)
-            if p.is_file() and rel.parts[0] not in SKIP_WORK_DIRS and rel.parts[0] != "export":
-                files[(workdir / rel).as_posix()] = p
+    data_files: dict[str, Path] = {}
+    if not args.no_data:
+        if workdir_abs.exists():
+            for p in sorted(workdir_abs.rglob("*")):
+                rel = p.relative_to(workdir_abs)
+                if p.is_file() and rel.parts[0] not in SKIP_WORK_DIRS and rel.parts[0] != "export":
+                    data_files[(workdir / rel).as_posix()] = p
+        data_files.update(_data_dir_files(args.repo, data_dirs))
+    files.update(data_files)
     notes_text = render_notes(args.version, meta, notes, code, sorted(files) + [NOTES_FILE])
 
     # 用临时 index 在 base 之上造一个提交：不碰工作区，不切分支
@@ -348,18 +403,18 @@ def cmd_publish(args) -> int:
         info.append(f"100644 {tgit('hash-object', '-w', '--stdin', input=notes_text).strip()}\t{NOTES_FILE}")
         tgit("update-index", "--add", "--index-info", input="\n".join(info) + "\n")
         tree = tgit("write-tree").strip()
+    extra_dirs = "" if not data_dirs else "，以及 " + "、".join(d.as_posix() for d in data_dirs)
     message = (
         f"唤醒词模型 {args.version}：{meta.get('wake_phrase', '')}\n\n"
         + "\n".join(summary_lines(meta))
         + f"\n\n训练代码 {base[:12]}；本提交带模型、配置与 {workdir.as_posix()} 下的训练数据"
-        + "（不含 resources / features）。\n"
+        + f"（不含 resources / features）{extra_dirs}。\n"
     )
     commit = git("commit-tree", tree, "-p", base, "-m", message).strip()
     git("update-ref", f"refs/heads/{branch}", commit)
-    n_data = sum(1 for p in files if p.startswith(workdir.as_posix()))
     print(
         f"created {branch} = {commit[:12]} on top of {base[:12]} "
-        f"({len(files) + 1} files, {n_data} under {workdir})"
+        f"({len(files) + 1} files, {len(data_files)} of training data)"
     )
     if args.push:
         force = ["--force"] if args.force else []

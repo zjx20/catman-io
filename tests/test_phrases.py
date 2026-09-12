@@ -41,17 +41,61 @@ def test_near_homophones_are_kept_out_of_training():
         for j in jobs
     ]
     groups = gather_samples(cfg, records)
-    assert not any(s.kind == "homophone" for s in groups[("negative", "train")])
-    assert any(s.kind == "homophone" for s in groups[("negative", "val")])
+    assert not any(s.kind == "homophone" for s in groups["negative_train"])
+    assert any(s.kind == "homophone" for s in groups["negative_val"])
+    assert all(groups[k] == [] for k in groups if k.startswith("extra_"))
 
     # train_on_homophones=True 时近音短语回到训练集；留出的音色（正负样本）只进验证集
     cfg.data.train_on_homophones = True
     cfg.data.holdout_voices = ["zh-HK-WanLungNeural"]
     groups = gather_samples(cfg, records)
-    assert any(s.kind == "homophone" for s in groups[("negative", "train")])
+    assert any(s.kind == "homophone" for s in groups["negative_train"])
     for lb in ("positive", "negative"):
-        assert not any(s.voice == "zh-HK-WanLungNeural" for s in groups[(lb, "train")])
-        assert any(s.voice == "zh-HK-WanLungNeural" for s in groups[(lb, "val")])
+        assert not any(s.voice == "zh-HK-WanLungNeural" for s in groups[f"{lb}_train"])
+        assert any(s.voice == "zh-HK-WanLungNeural" for s in groups[f"{lb}_val"])
+
+
+def test_real_recordings_go_to_their_own_groups(tmp_path):
+    """真人录音：extra_*_dirs 全部训练、extra_*_val_dirs 只验证，子目录名是说话人，目录不存在要报错。"""
+    import pytest
+
+    from training.wakeword.config import TrainingConfig
+    from training.wakeword.features import gather_samples
+
+    for sub in ("positive/male", "positive/female", "positive_val/male", "negative"):
+        (tmp_path / sub).mkdir(parents=True)
+    for p in (
+        "positive/male/a.wav",
+        "positive/male/b.wav",
+        "positive/female/c.wav",
+        "positive_val/male/d.wav",
+    ):
+        (tmp_path / p).write_bytes(b"")
+    (tmp_path / "negative/tv.wav").write_bytes(b"")
+    cfg = TrainingConfig()
+    cfg.data.extra_positive_dirs = [str(tmp_path / "positive")]
+    cfg.data.extra_positive_val_dirs = [str(tmp_path / "positive_val")]
+    cfg.data.extra_negative_dirs = [str(tmp_path / "negative")]
+    cfg.data.extra_positive_weight = 5
+    groups = gather_samples(cfg, [])
+    train, val = groups["extra_positive_train"], groups["extra_positive_val"]
+    assert [(s.path.name, s.voice, s.weight) for s in train] == [
+        ("c.wav", "female", 5),
+        ("a.wav", "male", 5),
+        ("b.wav", "male", 5),
+    ]
+    assert [(s.path.name, s.voice, s.weight, s.positive) for s in val] == [("d.wav", "male", 1, True)]
+    assert all(s.kind == "extra" for s in train + val)
+    # 文件直接放在目录下：目录名当说话人
+    assert [(s.voice, s.positive, s.weight) for s in groups["extra_negative_train"]] == [
+        ("negative", False, 2)
+    ]
+    assert groups["extra_negative_val"] == []
+    assert not any(s.kind == "extra" for s in groups["positive_train"] + groups["positive_val"])
+
+    cfg.data.extra_positive_dirs = [str(tmp_path / "nope")]
+    with pytest.raises(SystemExit, match="not found"):
+        gather_samples(cfg, [])
 
 
 def test_plan_jobs_respects_limits_and_split():

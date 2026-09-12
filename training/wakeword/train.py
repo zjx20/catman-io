@@ -39,6 +39,8 @@ class Datasets:
     fp_val: np.ndarray | None = None  # (T, 96) float32 memmap
     n_frames: int = 16
     n_features: int = 96
+    # 四个集合里各有多少行来自真人录音（增强后），只用于日志和元数据
+    real: dict[str, int] = field(default_factory=dict)
 
     @property
     def fp_val_hours(self) -> float:
@@ -54,7 +56,26 @@ def load_datasets(cfg: TrainingConfig, precomputed: Path | None, validation: Pat
             raise SystemExit(f"missing {p}; run `features` first")
         return np.load(p)
 
-    ds = Datasets(load("positive_train"), load("negative_train"), load("positive_val"), load("negative_val"))
+    def load_with_extra(name: str) -> tuple[np.ndarray, int]:
+        """合成片段的特征 + 真人录音的特征（有就拼上）；返回拼好的数组和真人录音那部分的行数。"""
+        base = load(name)
+        extra = fdir / f"extra_{name}.npy"
+        if not extra.exists():
+            return base, 0
+        x = np.load(extra)
+        return np.concatenate([base, x]), len(x)
+
+    pos_train, n_real_pos = load_with_extra("positive_train")
+    neg_train, n_real_neg = load_with_extra("negative_train")
+    pos_val, n_real_pos_val = load_with_extra("positive_val")
+    neg_val, n_real_neg_val = load_with_extra("negative_val")
+    ds = Datasets(pos_train, neg_train, pos_val, neg_val)
+    ds.real = {
+        "positive_train": n_real_pos,
+        "negative_train": n_real_neg,
+        "positive_val": n_real_pos_val,
+        "negative_val": n_real_neg_val,
+    }
     ds.n_frames, ds.n_features = ds.pos_train.shape[1], ds.pos_train.shape[2]
     if precomputed is not None and Path(precomputed).exists():
         ds.precomputed = np.load(precomputed, mmap_mode="r")
@@ -65,11 +86,15 @@ def load_datasets(cfg: TrainingConfig, precomputed: Path | None, validation: Pat
     if validation is not None and Path(validation).exists():
         ds.fp_val = np.load(validation, mmap_mode="r")
     log.info(
-        "datasets: pos %d/%d, neg %d/%d, precomputed %s, fp-val %.1f h",
+        "datasets: pos %d/%d (real recordings %d/%d), neg %d/%d (real %d/%d), precomputed %s, fp-val %.1f h",
         len(ds.pos_train),
         len(ds.pos_val),
+        ds.real["positive_train"],
+        ds.real["positive_val"],
         len(ds.neg_train),
         len(ds.neg_val),
+        ds.real["negative_train"],
+        ds.real["negative_val"],
         0 if ds.precomputed is None else len(ds.precomputed),
         ds.fp_val_hours,
     )
@@ -304,6 +329,7 @@ def run_training(cfg: TrainingConfig, precomputed: Path | None, validation: Path
             "negative_train": int(len(ds.neg_train)),
             "positive_val": int(len(ds.pos_val)),
             "negative_val": int(len(ds.neg_val)),
+            "real_recordings": dict(ds.real),  # 上面四个数里来自真人录音的部分
             "precomputed_negatives": 0 if ds.precomputed is None else int(len(ds.precomputed)),
             "fp_validation_hours": round(ds.fp_val_hours, 2),
         },
