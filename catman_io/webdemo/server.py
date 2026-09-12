@@ -6,12 +6,17 @@
   {"type":"save","label":..,"seconds":..}、{"type":"reset"}
 - 服务端 → 浏览器：{"type":"hello",...}、每帧一条 {"type":"frame","t":秒,"score":..,"fired":[..]}、
   {"type":"saved",...}、{"type":"config",...}、{"type":"error",...}
+
+另有普通 HTTP 路由供页面回放已存样本：GET /recordings 列出所有样本
+（label/name/url/seconds/bytes/mtime，最新在前）；GET /rec/{label}/{name} 提供对应的 wav 文件；
+DELETE /rec/{label}/{name} 删除它。label 必须在 LABELS 里、name 必须是保存时的文件名格式，防目录穿越。
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import wave
 from collections import deque
@@ -27,6 +32,45 @@ log = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parent / "static"
 LABELS = ("positive", "negative", "hit")
 RING_SECONDS = 12.0
+# save() 写出的文件名格式：20260911-071530-123.wav。回放路由只认这个格式，杜绝 ../ 之类的目录穿越。
+REC_NAME_RE = re.compile(r"^\d{8}-\d{6}-\d{3}\.wav$")
+
+
+def _wav_seconds(size_bytes: int) -> float:
+    """16 kHz 单声道 16-bit：秒数 = (字节数 - 44 字节头) / 2 / 16000。"""
+    return round(max(0.0, (size_bytes - 44) / 2 / SAMPLE_RATE), 2)
+
+
+def list_recordings(record_dir: Path) -> list[dict]:
+    """列出 record_dir 下所有已存样本，最新在前。"""
+    items: list[dict] = []
+    for label in LABELS:
+        d = record_dir / label
+        if not d.exists():
+            continue
+        for wav in d.glob("*.wav"):
+            try:
+                stat = wav.stat()
+            except OSError:
+                continue
+            items.append(
+                {
+                    "label": label,
+                    "name": wav.name,
+                    "url": f"/rec/{label}/{wav.name}",
+                    "seconds": _wav_seconds(stat.st_size),
+                    "bytes": stat.st_size,
+                    "mtime": stat.st_mtime,
+                }
+            )
+    items.sort(key=lambda it: it["mtime"], reverse=True)
+    return items
+
+
+def _counts(record_dir: Path) -> dict[str, int]:
+    return {
+        lb: len(list((record_dir / lb).glob("*.wav"))) if (record_dir / lb).exists() else 0 for lb in LABELS
+    }
 
 
 class Session:
@@ -78,10 +122,7 @@ class Session:
         return path
 
     def counts(self) -> dict[str, int]:
-        return {
-            lb: len(list((self.record_dir / lb).glob("*.wav"))) if (self.record_dir / lb).exists() else 0
-            for lb in LABELS
-        }
+        return _counts(self.record_dir)
 
 
 def _det_json(d: Detection) -> dict:
@@ -119,6 +160,30 @@ def make_app(
 
     async def favicon(request):
         return web.Response(status=204)
+
+    async def recordings(request):
+        return web.json_response({"recordings": list_recordings(record_dir)})
+
+    async def recording_file(request):
+        label, name = request.match_info["label"], request.match_info["name"]
+        if label not in LABELS or not REC_NAME_RE.match(name):
+            raise web.HTTPNotFound()
+        path = record_dir / label / name
+        if not path.is_file():
+            raise web.HTTPNotFound()
+        return web.FileResponse(
+            path, headers={"Content-Type": "audio/wav", "Cache-Control": "no-store"}
+        )
+
+    async def recording_delete(request):
+        label, name = request.match_info["label"], request.match_info["name"]
+        if label not in LABELS or not REC_NAME_RE.match(name):
+            raise web.HTTPNotFound()
+        path = record_dir / label / name
+        if not path.is_file():
+            raise web.HTTPNotFound()
+        path.unlink()
+        return web.json_response({"deleted": f"/rec/{label}/{name}", "counts": _counts(record_dir)})
 
     async def ws_handler(request):
         ws = web.WebSocketResponse(max_msg_size=4 << 20, heartbeat=20)
@@ -160,11 +225,15 @@ def make_app(
                         path = session.save(
                             str(data.get("label", "positive")), float(data.get("seconds", 3.0))
                         )
+                        label = path.parent.name
                         await ws.send_json(
                             {
                                 "type": "saved",
-                                "label": data.get("label"),
+                                "label": label,
                                 "path": str(path),
+                                "name": path.name,
+                                "url": f"/rec/{label}/{path.name}",
+                                "seconds": _wav_seconds(path.stat().st_size),
                                 "counts": session.counts(),
                             }
                         )
@@ -184,6 +253,9 @@ def make_app(
     app = web.Application()
     app.router.add_get("/", index)
     app.router.add_get("/favicon.ico", favicon)
+    app.router.add_get("/recordings", recordings)
+    app.router.add_get("/rec/{label}/{name}", recording_file)
+    app.router.add_delete("/rec/{label}/{name}", recording_delete)
     app.router.add_get("/ws", ws_handler)
     app.router.add_static("/static/", STATIC_DIR, show_index=False)
     return app

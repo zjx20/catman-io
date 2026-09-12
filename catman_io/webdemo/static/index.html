@@ -48,6 +48,18 @@
   th { color: var(--text-2); font-weight: normal; font-size: 12px; }
   .hint { color: var(--muted); font-size: 12px; }
   code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .chip { border-radius: 999px; padding: 4px 12px; }
+  .chip[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+  .chip .cnt { font-variant-numeric: tabular-nums; opacity: .7; margin-left: 2px; }
+  .tag { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; }
+  .tag.positive { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+  .tag.negative { background: color-mix(in srgb, var(--warning) 24%, transparent);
+                  color: color-mix(in srgb, var(--warning) 80%, var(--text)); }
+  .tag.hit { background: var(--series-soft); color: var(--series); }
+  td .op { padding: 3px 12px; }
+  td .op.del { color: var(--critical); }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .card-head b { font-size: 14px; }
 </style>
 </head>
 <body>
@@ -101,6 +113,25 @@
   </div>
 
   <div class="card">
+    <div class="card-head">
+      <b>已保存的样本</b>
+      <button id="refreshSamples">刷新</button>
+    </div>
+    <div class="row" id="sampleFilters" style="gap: 8px; margin: 0 0 10px">
+      <button class="chip" data-f="all" aria-pressed="true">全部 <span class="cnt" data-c="all">0</span></button>
+      <button class="chip" data-f="positive" aria-pressed="false">正样本 <span class="cnt" data-c="positive">0</span></button>
+      <button class="chip" data-f="negative" aria-pressed="false">负样本 <span class="cnt" data-c="negative">0</span></button>
+      <button class="chip" data-f="hit" aria-pressed="false">命中片段 <span class="cnt" data-c="hit">0</span></button>
+    </div>
+    <table>
+      <thead><tr><th>时间</th><th>类型</th><th>长度</th><th>操作</th></tr></thead>
+      <tbody id="samples"></tbody>
+    </table>
+    <div class="hint" id="samplesHint">还没有样本。录音后会出现在这里，可回放确认、删除录坏的。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><b>命中记录（实时）</b><span class="hint">监听时每次触发唤醒会记一行</span></div>
     <table>
       <thead><tr><th>#</th><th>时间</th><th>流时间</th><th>分数</th><th>模型</th></tr></thead>
       <tbody id="log"></tbody>

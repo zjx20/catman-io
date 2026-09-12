@@ -6,7 +6,8 @@
 
   const state = { ws: null, ctx: null, stream: null, node: null, running: false,
                   hits: 0, frames: 0, startedAt: 0, lastScore: 0, threshold: 0.5,
-                  points: [], hitPoints: [], pendingAutoSave: null };
+                  points: [], hitPoints: [], pendingAutoSave: null,
+                  samples: [], sampleFilter: 'all', audio: null, playingBtn: null };
   window.demo = state; // 方便自动化测试读取
 
   // ---------------------------------------------------------------- WebSocket
@@ -30,6 +31,7 @@
       updateSliderLabels();
       $('recInfo').textContent = `录音目录：${m.record_dir}　已有 正样本 ${m.counts.positive} · 负样本 ${m.counts.negative} · 命中片段 ${m.counts.hit}`;
       setStatus(`已连接，模型：${m.models.join(', ')}`);
+      fetchSamples();
     } else if (m.type === 'frame') {
       state.frames++;
       state.lastScore = m.score;
@@ -49,6 +51,7 @@
       for (const d of m.fired) onHit(d, m.t);
     } else if (m.type === 'saved') {
       $('recInfo').textContent = `已保存 ${m.path}　正样本 ${m.counts.positive} · 负样本 ${m.counts.negative} · 命中片段 ${m.counts.hit}`;
+      if (m.url) addSample(m);
     } else if (m.type === 'config') {
       state.threshold = m.threshold;
     } else if (m.type === 'error') {
@@ -175,6 +178,90 @@
   $('reset').onclick = () => { send({ type: 'reset' }); state.points = []; state.hitPoints = []; };
   function setStatus(s) { $('status').textContent = s; }
 
+  // ---------------------------------------------------------------- 已保存样本：列表 / 回放 / 删除
+  const LABEL_TEXT = { positive: '正样本', negative: '负样本', hit: '命中片段' };
+
+  function playUrl(url, btn) {
+    // 一次只播一条：点正在播的那条就停，点别的就切过去
+    const cur = state.audio;
+    if (state.playingBtn && state.playingBtn !== btn) state.playingBtn.textContent = '播放';
+    if (cur && state.playingBtn === btn && !cur.paused) {
+      cur.pause(); btn.textContent = '播放'; state.playingBtn = null; return;
+    }
+    if (cur) cur.pause();
+    const a = new Audio(url); state.audio = a; state.playingBtn = btn;
+    a.onended = () => { btn.textContent = '播放'; if (state.playingBtn === btn) state.playingBtn = null; };
+    a.onerror = () => { btn.textContent = '播放失败'; };
+    btn.textContent = '停止';
+    a.play().catch(() => { btn.textContent = '播放失败'; });
+  }
+
+  function deleteSample(item) {
+    if (!confirm(`删除这条${LABEL_TEXT[item.label] || item.label}？删了不可恢复。`)) return;
+    fetch(item.url, { method: 'DELETE' }).then((r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      if (state.playingBtn && state.audio) { state.audio.pause(); state.playingBtn = null; }
+      state.samples = state.samples.filter((x) => x.url !== item.url);
+      renderSamples();
+    }).catch(() => setStatus('删除失败，样本可能已被移走'));
+  }
+
+  function sampleRow(it) {
+    const tr = document.createElement('tr');
+    const t = new Date(it.mtime ? it.mtime * 1000 : Date.now());
+    tr.innerHTML = `<td>${t.toLocaleString()}</td><td><span class="tag ${it.label}">` +
+                   `${LABEL_TEXT[it.label] || it.label}</span></td><td>${(it.seconds || 0).toFixed(1)} s</td>`;
+    const td = document.createElement('td');
+    const play = document.createElement('button'); play.className = 'op'; play.textContent = '播放';
+    play.onclick = () => playUrl(it.url, play);
+    const del = document.createElement('button'); del.className = 'op del'; del.textContent = '删除';
+    del.onclick = () => deleteSample(it);
+    td.append(play, document.createTextNode(' '), del); tr.appendChild(td);
+    return tr;
+  }
+
+  function updateFilterCounts() {
+    const c = { all: state.samples.length, positive: 0, negative: 0, hit: 0 };
+    for (const it of state.samples) c[it.label] = (c[it.label] || 0) + 1;
+    document.querySelectorAll('#sampleFilters .cnt').forEach((el) => {
+      el.textContent = c[el.dataset.c] ?? 0;
+    });
+  }
+
+  function renderSamples() {
+    const tb = $('samples'); tb.innerHTML = '';
+    const list = state.sampleFilter === 'all'
+      ? state.samples : state.samples.filter((x) => x.label === state.sampleFilter);
+    for (const it of list) tb.appendChild(sampleRow(it));
+    updateFilterCounts();
+    $('samplesHint').textContent = state.samples.length
+      ? (list.length ? `共 ${list.length} 条，点「播放」回放、「删除」去掉录坏的。`
+                     : '这个类型下还没有样本。')
+      : '还没有样本。录音后会出现在这里，可回放确认、删除录坏的。';
+  }
+
+  function fetchSamples() {
+    fetch('/recordings').then((r) => r.json())
+      .then((d) => { state.samples = d.recordings || []; renderSamples(); })
+      .catch(() => { $('samplesHint').textContent = '拿不到样本列表。'; });
+  }
+
+  function addSample(m) {
+    state.samples.unshift({ label: m.label, name: m.name, url: m.url,
+                            seconds: m.seconds, mtime: Date.now() / 1000 });
+    renderSamples();
+  }
+
+  $('refreshSamples').onclick = fetchSamples;
+  document.querySelectorAll('#sampleFilters .chip').forEach((b) => {
+    b.onclick = () => {
+      state.sampleFilter = b.dataset.f;
+      document.querySelectorAll('#sampleFilters .chip')
+        .forEach((o) => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      renderSamples();
+    };
+  });
+
   // ---------------------------------------------------------------- 图
   const canvas = $('chart'); const g = canvas.getContext('2d');
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -233,4 +320,5 @@
   requestAnimationFrame(draw);
   updateSliderLabels();
   if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) fillDevices().catch(() => {});
+  fetchSamples(); // 开页面就显示已有样本，不用先连麦克风
 })();

@@ -95,6 +95,27 @@ def test_websocket_roundtrip(ready, tmp_path):
             saved = await ws.receive_json()
             assert saved["type"] == "saved" and Path(saved["path"]).exists()
             assert saved["counts"]["hit"] == 1
+            assert saved["url"] == f"/rec/hit/{saved['name']}" and saved["seconds"] > 0
+
+            # 列表里能看到它，带类型标签
+            listed = (await (await client.get("/recordings")).json())["recordings"]
+            assert any(r["label"] == "hit" and r["name"] == saved["name"] for r in listed)
+
+            # 能取到 wav 回放
+            audio = await client.get(saved["url"])
+            assert audio.status == 200 and audio.headers["Content-Type"] == "audio/wav"
+            assert len(await audio.read()) > 44
+
+            # 非法 label / 文件名（含目录穿越）一律 404
+            assert (await client.get("/rec/bogus/x.wav")).status == 404
+            assert (await client.get("/rec/hit/notaname")).status == 404
+            assert (await client.get("/recordings/../server.py")).status == 404
+
+            # 删除后文件没了、计数归零
+            deleted = await client.delete(saved["url"])
+            assert deleted.status == 200 and (await deleted.json())["counts"]["hit"] == 0
+            assert (await client.get(saved["url"])).status == 404
+            assert not Path(saved["path"]).exists()
 
             await ws.send_json({"type": "nope"})
             err = await ws.receive_json()
