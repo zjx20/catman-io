@@ -1,0 +1,350 @@
+{
+  "model": "training/wakeword/work/siu_maau_jan/export/siu_maau_jan.onnx",
+  "clean": {
+    "n_positive": 102,
+    "n_negative": 400,
+    "recall@0.3": 1.0,
+    "recall@0.5": 1.0,
+    "recall@0.7": 0.9902,
+    "recall@0.9": 0.9804,
+    "false_accept@0.3": 0.2425,
+    "false_accept@0.5": 0.2375,
+    "false_accept@0.7": 0.2375,
+    "false_accept@0.9": 0.2225,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.044,
+      "general": 0.0047,
+      "homophone": 0.9574
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 1.0,
+      "+10%": 1.0,
+      "+20%": 1.0
+    },
+    "recall_by_voice@0.5": {
+      "female": 1.0,
+      "male": 1.0,
+      "zh-HK-HiuGaaiNeural": 1.0,
+      "zh-HK-HiuMaanNeural": 1.0,
+      "zh-HK-WanLungNeural": 1.0
+    },
+    "positive_score_p10": 0.98,
+    "positive_score_median": 0.9899,
+    "negative_score_p99": 0.9915
+  },
+  "top_false_accepts": [
+    {
+      "score": 0.993,
+      "text": "秒貓人"
+    },
+    {
+      "score": 0.992,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.992,
+      "text": "燒貓人"
+    },
+    {
+      "score": 0.992,
+      "text": "秒貓人"
+    },
+    {
+      "score": 0.991,
+      "text": "小貓銀"
+    },
+    {
+      "score": 0.991,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.991,
+      "text": "小貓銀"
+    },
+    {
+      "score": 0.991,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.991,
+      "text": "小貓恩"
+    },
+    {
+      "score": 0.99,
+      "text": "小貓印"
+    },
+    {
+      "score": 0.99,
+      "text": "燒貓人"
+    },
+    {
+      "score": 0.99,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.99,
+      "text": "小貓引"
+    },
+    {
+      "score": 0.99,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.99,
+      "text": "小貓印"
+    },
+    {
+      "score": 0.99,
+      "text": "小茅人"
+    },
+    {
+      "score": 0.989,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.989,
+      "text": "燒貓人"
+    },
+    {
+      "score": 0.989,
+      "text": "小貓銀"
+    },
+    {
+      "score": 0.989,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.989,
+      "text": "小貓印"
+    },
+    {
+      "score": 0.989,
+      "text": "小貌人"
+    },
+    {
+      "score": 0.989,
+      "text": "小貓引"
+    },
+    {
+      "score": 0.989,
+      "text": "燒貓人"
+    },
+    {
+      "score": 0.989,
+      "text": "笑貓人"
+    },
+    {
+      "score": 0.988,
+      "text": "小貓引"
+    },
+    {
+      "score": 0.988,
+      "text": "小貓恩"
+    },
+    {
+      "score": 0.988,
+      "text": "小貓忍"
+    },
+    {
+      "score": 0.988,
+      "text": "小貓印"
+    },
+    {
+      "score": 0.988,
+      "text": "小貓恩"
+    }
+  ],
+  "augmented": {
+    "n_positive": 102,
+    "n_negative": 400,
+    "recall@0.3": 0.9608,
+    "recall@0.5": 0.9608,
+    "recall@0.7": 0.9314,
+    "recall@0.9": 0.8922,
+    "false_accept@0.3": 0.2675,
+    "false_accept@0.5": 0.255,
+    "false_accept@0.7": 0.2475,
+    "false_accept@0.9": 0.205,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.1758,
+      "general": 0.0279,
+      "homophone": 0.8511
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 0.8824,
+      "-10%": 1.0,
+      "+0%": 1.0,
+      "+10%": 0.9545,
+      "+20%": 1.0
+    },
+    "recall_by_voice@0.5": {
+      "female": 0.75,
+      "male": 1.0,
+      "zh-HK-HiuGaaiNeural": 0.9677,
+      "zh-HK-HiuMaanNeural": 0.9394,
+      "zh-HK-WanLungNeural": 1.0
+    },
+    "positive_score_p10": 0.9006,
+    "positive_score_median": 0.9897,
+    "negative_score_p99": 0.9925
+  },
+  "fast_x1.25": {
+    "n_positive": 102,
+    "n_negative": 400,
+    "recall@0.3": 1.0,
+    "recall@0.5": 1.0,
+    "recall@0.7": 1.0,
+    "recall@0.9": 1.0,
+    "false_accept@0.3": 0.27,
+    "false_accept@0.5": 0.25,
+    "false_accept@0.7": 0.2475,
+    "false_accept@0.9": 0.2325,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.1099,
+      "general": 0.0047,
+      "homophone": 0.9468
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 1.0,
+      "+10%": 1.0,
+      "+20%": 1.0
+    },
+    "recall_by_voice@0.5": {
+      "female": 1.0,
+      "male": 1.0,
+      "zh-HK-HiuGaaiNeural": 1.0,
+      "zh-HK-HiuMaanNeural": 1.0,
+      "zh-HK-WanLungNeural": 1.0
+    },
+    "positive_score_p10": 0.9859,
+    "positive_score_median": 0.9895,
+    "negative_score_p99": 0.9922
+  },
+  "fast_x1.5": {
+    "n_positive": 102,
+    "n_negative": 400,
+    "recall@0.3": 0.9804,
+    "recall@0.5": 0.9608,
+    "recall@0.7": 0.951,
+    "recall@0.9": 0.9118,
+    "false_accept@0.3": 0.275,
+    "false_accept@0.5": 0.2675,
+    "false_accept@0.7": 0.26,
+    "false_accept@0.9": 0.255,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.1429,
+      "general": 0.0047,
+      "homophone": 0.9894
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 1.0,
+      "+10%": 1.0,
+      "+20%": 0.75
+    },
+    "recall_by_voice@0.5": {
+      "female": 1.0,
+      "male": 1.0,
+      "zh-HK-HiuGaaiNeural": 1.0,
+      "zh-HK-HiuMaanNeural": 0.9394,
+      "zh-HK-WanLungNeural": 0.9333
+    },
+    "positive_score_p10": 0.9261,
+    "positive_score_median": 0.9884,
+    "negative_score_p99": 0.9917
+  },
+  "fast_x1.75": {
+    "n_positive": 102,
+    "n_negative": 400,
+    "recall@0.3": 0.8627,
+    "recall@0.5": 0.8431,
+    "recall@0.7": 0.7941,
+    "recall@0.9": 0.7255,
+    "false_accept@0.3": 0.27,
+    "false_accept@0.5": 0.26,
+    "false_accept@0.7": 0.2525,
+    "false_accept@0.9": 0.2175,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.1868,
+      "general": 0.0,
+      "homophone": 0.9255
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 0.9524,
+      "+10%": 0.7273,
+      "+20%": 0.5625
+    },
+    "recall_by_voice@0.5": {
+      "female": 0.75,
+      "male": 0.75,
+      "zh-HK-HiuGaaiNeural": 0.9355,
+      "zh-HK-HiuMaanNeural": 0.7273,
+      "zh-HK-WanLungNeural": 0.9
+    },
+    "positive_score_p10": 0.0811,
+    "positive_score_median": 0.9827,
+    "negative_score_p99": 0.9914
+  },
+  "fast_x2.0": {
+    "n_positive": 102,
+    "n_negative": 400,
+    "recall@0.3": 0.7353,
+    "recall@0.5": 0.6863,
+    "recall@0.7": 0.6176,
+    "recall@0.9": 0.5,
+    "false_accept@0.3": 0.225,
+    "false_accept@0.5": 0.2175,
+    "false_accept@0.7": 0.19,
+    "false_accept@0.9": 0.145,
+    "false_accept_by_kind@0.5": {
+      "adversarial": 0.1538,
+      "general": 0.0,
+      "homophone": 0.7766
+    },
+    "recall_by_rate@0.5": {
+      "-20%": 1.0,
+      "-10%": 1.0,
+      "+0%": 0.8095,
+      "+10%": 0.3636,
+      "+20%": 0.375
+    },
+    "recall_by_voice@0.5": {
+      "female": 0.5,
+      "male": 0.5,
+      "zh-HK-HiuGaaiNeural": 0.8065,
+      "zh-HK-HiuMaanNeural": 0.6061,
+      "zh-HK-WanLungNeural": 0.7
+    },
+    "positive_score_p10": 0.0027,
+    "positive_score_median": 0.8981,
+    "negative_score_p99": 0.9908
+  },
+  "real": {
+    "n_positive": 8,
+    "n_negative": 0,
+    "recall@0.3": 1.0,
+    "recall@0.5": 1.0,
+    "recall@0.7": 1.0,
+    "recall@0.9": 1.0,
+    "recall_by_voice@0.5": {
+      "female": 1.0,
+      "male": 1.0
+    },
+    "positive_score_median": 0.9883,
+    "missed@0.5": []
+  },
+  "fp_validation": {
+    "hours": 10.7,
+    "activations_per_hour@0.3": 0.374,
+    "activations_per_hour@0.5": 0.187,
+    "activations_per_hour@0.7": 0.0,
+    "activations_per_hour@0.9": 0.0
+  }
+}

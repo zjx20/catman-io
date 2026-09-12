@@ -1,0 +1,602 @@
+[
+  {
+    "val_recall": 0.6176470518112183,
+    "val_fp": 88,
+    "val_acc": 0.841017484664917,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 22500,
+    "loss": 1.3235621452331543
+  },
+  {
+    "val_recall": 0.7781862616539001,
+    "val_fp": 145,
+    "val_acc": 0.870429277420044,
+    "fp_windows_per_hour": 0.09348803872482316,
+    "activations_per_hour": 0.09348803872482316,
+    "stage": 1,
+    "step": 22894,
+    "loss": 0.6756677031517029
+  },
+  {
+    "val_recall": 0.7855392098426819,
+    "val_fp": 144,
+    "val_acc": 0.8732114434242249,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 23289,
+    "loss": 1.0495426654815674
+  },
+  {
+    "val_recall": 0.8088235259056091,
+    "val_fp": 159,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 23684,
+    "loss": 0.7687047123908997
+  },
+  {
+    "val_recall": 0.7928921580314636,
+    "val_fp": 148,
+    "val_acc": 0.8740063309669495,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 24078,
+    "loss": 0.9567688703536987
+  },
+  {
+    "val_recall": 0.751225471496582,
+    "val_fp": 134,
+    "val_acc": 0.8660572171211243,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 24473,
+    "loss": 0.7481690049171448
+  },
+  {
+    "val_recall": 0.781862735748291,
+    "val_fp": 150,
+    "val_acc": 0.8696343302726746,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 24868,
+    "loss": 0.4038618206977844
+  },
+  {
+    "val_recall": 0.7352941036224365,
+    "val_fp": 124,
+    "val_acc": 0.8648648858070374,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 25262,
+    "loss": 0.9217159152030945
+  },
+  {
+    "val_recall": 0.6507353186607361,
+    "val_fp": 85,
+    "val_acc": 0.8529411554336548,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 25657,
+    "loss": 1.203437328338623
+  },
+  {
+    "val_recall": 0.7647058963775635,
+    "val_fp": 134,
+    "val_acc": 0.870429277420044,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 26052,
+    "loss": 0.6115038394927979
+  },
+  {
+    "val_recall": 0.7647058963775635,
+    "val_fp": 136,
+    "val_acc": 0.8696343302726746,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 26446,
+    "loss": 1.135653018951416
+  },
+  {
+    "val_recall": 0.7696078419685364,
+    "val_fp": 130,
+    "val_acc": 0.8736088871955872,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 26841,
+    "loss": 1.777392864227295
+  },
+  {
+    "val_recall": 0.7732843160629272,
+    "val_fp": 139,
+    "val_acc": 0.8712241649627686,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 27236,
+    "loss": 1.100709319114685
+  },
+  {
+    "val_recall": 0.7634803652763367,
+    "val_fp": 134,
+    "val_acc": 0.8700317740440369,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 27630,
+    "loss": 0.8570592403411865
+  },
+  {
+    "val_recall": 0.7892156839370728,
+    "val_fp": 142,
+    "val_acc": 0.8751987218856812,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 28025,
+    "loss": 0.7728368043899536
+  },
+  {
+    "val_recall": 0.780637264251709,
+    "val_fp": 136,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 28420,
+    "loss": 1.0193406343460083
+  },
+  {
+    "val_recall": 0.7843137383460999,
+    "val_fp": 141,
+    "val_acc": 0.8740063309669495,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 28814,
+    "loss": 1.1492210626602173
+  },
+  {
+    "val_recall": 0.7892156839370728,
+    "val_fp": 141,
+    "val_acc": 0.8755961656570435,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 29209,
+    "loss": 0.6895588636398315
+  },
+  {
+    "val_recall": 0.7867646813392639,
+    "val_fp": 139,
+    "val_acc": 0.8755961656570435,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 29604,
+    "loss": 0.9465953707695007
+  },
+  {
+    "val_recall": 0.7867646813392639,
+    "val_fp": 139,
+    "val_acc": 0.8755961656570435,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 1,
+    "step": 29999,
+    "loss": 0.701892077922821
+  },
+  {
+    "val_recall": 0.7867646813392639,
+    "val_fp": 139,
+    "val_acc": 0.8755961656570435,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 1,
+    "loss": 1.037744164466858
+  },
+  {
+    "val_recall": 0.7953431606292725,
+    "val_fp": 145,
+    "val_acc": 0.8759936690330505,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 158,
+    "loss": 0.23069626092910767
+  },
+  {
+    "val_recall": 0.8198529481887817,
+    "val_fp": 158,
+    "val_acc": 0.8787758350372314,
+    "fp_windows_per_hour": 0.09348803872482316,
+    "activations_per_hour": 0.09348803872482316,
+    "stage": 2,
+    "step": 316,
+    "loss": 0.19365344941616058
+  },
+  {
+    "val_recall": 0.8235294222831726,
+    "val_fp": 165,
+    "val_acc": 0.8771860003471375,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 2,
+    "step": 474,
+    "loss": 0.7635066509246826
+  },
+  {
+    "val_recall": 0.8345588445663452,
+    "val_fp": 172,
+    "val_acc": 0.8779809474945068,
+    "fp_windows_per_hour": 0.1869760774496463,
+    "activations_per_hour": 0.1869760774496463,
+    "stage": 2,
+    "step": 632,
+    "loss": 0.6584729552268982
+  },
+  {
+    "val_recall": 0.8284313678741455,
+    "val_fp": 164,
+    "val_acc": 0.8791732788085938,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 789,
+    "loss": 1.1342790126800537
+  },
+  {
+    "val_recall": 0.8223039507865906,
+    "val_fp": 161,
+    "val_acc": 0.8783783912658691,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 947,
+    "loss": 0.19322170317173004
+  },
+  {
+    "val_recall": 0.8149510025978088,
+    "val_fp": 158,
+    "val_acc": 0.8771860003471375,
+    "fp_windows_per_hour": 0.09348803872482316,
+    "activations_per_hour": 0.09348803872482316,
+    "stage": 2,
+    "step": 1105,
+    "loss": 0.7395201325416565
+  },
+  {
+    "val_recall": 0.7843137383460999,
+    "val_fp": 144,
+    "val_acc": 0.8728139996528625,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 1263,
+    "loss": 0.9668669700622559
+  },
+  {
+    "val_recall": 0.7990196347236633,
+    "val_fp": 151,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 1421,
+    "loss": 0.36604100465774536
+  },
+  {
+    "val_recall": 0.8100489974021912,
+    "val_fp": 157,
+    "val_acc": 0.8759936690330505,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 1578,
+    "loss": 0.7272716760635376
+  },
+  {
+    "val_recall": 0.7965686321258545,
+    "val_fp": 149,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 1736,
+    "loss": 0.890990674495697
+  },
+  {
+    "val_recall": 0.7990196347236633,
+    "val_fp": 148,
+    "val_acc": 0.8759936690330505,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 1894,
+    "loss": 1.2231783866882324
+  },
+  {
+    "val_recall": 0.7855392098426819,
+    "val_fp": 141,
+    "val_acc": 0.8744038343429565,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 2052,
+    "loss": 1.1053189039230347
+  },
+  {
+    "val_recall": 0.7757353186607361,
+    "val_fp": 136,
+    "val_acc": 0.8732114434242249,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 2210,
+    "loss": 1.4645631313323975
+  },
+  {
+    "val_recall": 0.7720588445663452,
+    "val_fp": 136,
+    "val_acc": 0.8720190525054932,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 2367,
+    "loss": 1.2692898511886597
+  },
+  {
+    "val_recall": 0.7892156839370728,
+    "val_fp": 142,
+    "val_acc": 0.8751987218856812,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 2525,
+    "loss": 0.6243705153465271
+  },
+  {
+    "val_recall": 0.7953431606292725,
+    "val_fp": 148,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 2683,
+    "loss": 0.6786913275718689
+  },
+  {
+    "val_recall": 0.7941176295280457,
+    "val_fp": 147,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 2841,
+    "loss": 0.6826026439666748
+  },
+  {
+    "val_recall": 0.7941176295280457,
+    "val_fp": 147,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 2,
+    "step": 2999,
+    "loss": 1.260351538658142
+  },
+  {
+    "val_recall": 0.7941176295280457,
+    "val_fp": 147,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 1,
+    "loss": 0.6332922577857971
+  },
+  {
+    "val_recall": 0.7953431606292725,
+    "val_fp": 147,
+    "val_acc": 0.8751987218856812,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 158,
+    "loss": 0.39382973313331604
+  },
+  {
+    "val_recall": 0.7977941036224365,
+    "val_fp": 150,
+    "val_acc": 0.8748012781143188,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 316,
+    "loss": 0.6616390943527222
+  },
+  {
+    "val_recall": 0.8002451062202454,
+    "val_fp": 153,
+    "val_acc": 0.8744038343429565,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 474,
+    "loss": 0.9887046217918396
+  },
+  {
+    "val_recall": 0.8149510025978088,
+    "val_fp": 158,
+    "val_acc": 0.8771860003471375,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 632,
+    "loss": 0.4655562937259674
+  },
+  {
+    "val_recall": 0.8149510025978088,
+    "val_fp": 158,
+    "val_acc": 0.8771860003471375,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 789,
+    "loss": 0.33842480182647705
+  },
+  {
+    "val_recall": 0.8161764740943909,
+    "val_fp": 159,
+    "val_acc": 0.8771860003471375,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 947,
+    "loss": 0.8155228495597839
+  },
+  {
+    "val_recall": 0.8174019455909729,
+    "val_fp": 161,
+    "val_acc": 0.8767885565757751,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 1105,
+    "loss": 1.0608608722686768
+  },
+  {
+    "val_recall": 0.8174019455909729,
+    "val_fp": 161,
+    "val_acc": 0.8767885565757751,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 1263,
+    "loss": 0.7809279561042786
+  },
+  {
+    "val_recall": 0.8174019455909729,
+    "val_fp": 161,
+    "val_acc": 0.8767885565757751,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 1421,
+    "loss": 0.7880446314811707
+  },
+  {
+    "val_recall": 0.8100489974021912,
+    "val_fp": 157,
+    "val_acc": 0.8759936690330505,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 1578,
+    "loss": 0.5556318759918213
+  },
+  {
+    "val_recall": 0.8063725233078003,
+    "val_fp": 156,
+    "val_acc": 0.8751987218856812,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 1736,
+    "loss": 0.8657093644142151
+  },
+  {
+    "val_recall": 0.8039215803146362,
+    "val_fp": 156,
+    "val_acc": 0.8744038343429565,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 1894,
+    "loss": 1.1817528009414673
+  },
+  {
+    "val_recall": 0.8002451062202454,
+    "val_fp": 154,
+    "val_acc": 0.8740063309669495,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 2052,
+    "loss": 0.5860115885734558
+  },
+  {
+    "val_recall": 0.7990196347236633,
+    "val_fp": 154,
+    "val_acc": 0.8736088871955872,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 2210,
+    "loss": 1.0530673265457153
+  },
+  {
+    "val_recall": 0.7965686321258545,
+    "val_fp": 153,
+    "val_acc": 0.8732114434242249,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 2367,
+    "loss": 0.8368117213249207
+  },
+  {
+    "val_recall": 0.7965686321258545,
+    "val_fp": 153,
+    "val_acc": 0.8732114434242249,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 2525,
+    "loss": 1.0837842226028442
+  },
+  {
+    "val_recall": 0.7965686321258545,
+    "val_fp": 153,
+    "val_acc": 0.8732114434242249,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 2683,
+    "loss": 0.7604444026947021
+  },
+  {
+    "val_recall": 0.7965686321258545,
+    "val_fp": 153,
+    "val_acc": 0.8732114434242249,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 2841,
+    "loss": 0.8326132297515869
+  },
+  {
+    "val_recall": 0.7965686321258545,
+    "val_fp": 153,
+    "val_acc": 0.8732114434242249,
+    "fp_windows_per_hour": 0.0,
+    "activations_per_hour": 0.0,
+    "stage": 3,
+    "step": 2999,
+    "loss": 1.2784076929092407
+  }
+]
