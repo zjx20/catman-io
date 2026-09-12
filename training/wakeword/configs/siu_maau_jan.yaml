@@ -66,3 +66,6 @@ train:
   max_negative_weight: 1500
   target_fp_per_hour: 0.2
   seed: 0
+  # 单线程：同一配方 4 线程那次训练通用音频误唤醒 0.65/h（没一个检查点达标），单线程 seed 0 是 0.19/h、seed 1 是 0.09/h，
+  # 这个小模型的训练轨迹本身波动就很大，单线程至少可复现；4 核上大约 20 分钟
+  threads: 1

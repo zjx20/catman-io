@@ -55,9 +55,10 @@ class DataConfig:
     # 整个音色留出来只做验证（正负样本都不训练）：估计模型对没见过的说话人的召回，
     # 比默认的按片段随机划分诚实得多（后者训练集与验证集里有几乎一样的片段）
     holdout_voices: list[str] = field(default_factory=list)
-    # 真人录音目录（任意采样率的 wav，自动转 16 kHz 单声道），递归收；子目录名当说话人，evaluate 按它分组报召回。
-    # extra_*_dirs 全部训练；想知道真人召回，把每位说话人随机挑几条放到 extra_*_val_dirs
-    # （只验证，evaluate 会用整条录音流式打分、单独报一栏）。强烈建议录几十条正样本：真人录音是最终的裁判。
+    # 真人录音目录（任意采样率的 wav，自动转 16 kHz 单声道），递归收；子目录名当说话人，
+    # evaluate 按它分组报召回。extra_*_dirs 全部训练；想知道真人召回，把每位说话人随机挑几条
+    # 放到 extra_*_val_dirs（只验证，evaluate 会用整条录音流式打分、单独报一栏）。
+    # 强烈建议录几十条正样本：真人录音是最终的裁判。
     extra_positive_dirs: list[str] = field(default_factory=list)
     extra_negative_dirs: list[str] = field(default_factory=list)
     extra_positive_val_dirs: list[str] = field(default_factory=list)
