@@ -63,6 +63,9 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
   `{tail}` / `{polite}` 是宏；每个意图的 `examples` 必须全部命中本意图（`RuleSet.lint`），`negatives` 不得命中。
   内置规则在 `catman_io/intent/rules/builtin.yaml`，现场规则在 `<data_dir>/intent/rules/*.yaml`（同名覆盖，热加载）。
   改内置规则要同时跑 `catman-io intent lint` 与 `pytest tests/test_rules.py`。新意图会自动变成 LLM 层的工具。
+  动作缺槽位就追问：返回 `ActionResult(say="要計幾耐呀？", followup=True, ask="duration")`，`responder` 把追问记在
+  `ctx.state["pending"]`（30 s 内、只给一次机会），下一句先用该槽位类型的模式片段搜索解析，得到就带着槽位重跑同一意图
+  （`tier="followup"`），得不到才正常路由。
 - **日志字段**：`journal/__init__.py:build_record` 是唯一的字段来源；标记逻辑在 `journal/flags.py`，加新标记要同时加进
   `BAD_FLAGS` / `FLAG_HELP` 并补一个 `tests/test_journal.py` 用例。日志行的 `kind` 是行类型（turn / amend），回合类型叫 `turn_kind`。
 - **HTTP API**（`api/server.py`）是给 catman 的合同：路由与语义写在模块顶部注释里，改了要同步

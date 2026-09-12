@@ -1,9 +1,15 @@
 """应答器：听清一句话之后——路由意图 → 执行动作 / 问大脑 / 交给 catman → 按句念出来，
-并把过程记进 turn.info（日志用）。"""
+并把过程记进 turn.info（日志用）。
+
+动作可以追问一个槽位（``ActionResult.ask``，例如「要計幾耐呀？」）：责任在这里记住"等一个 duration"，
+下一句话先按那个槽位解析（「三十分鐘」「十個字」），解析得到就带着它再执行同一个意图；
+解析不到（用户改口问别的）就当普通一句话路由。追问只保留 ``PENDING_SLOT_SECONDS``，且只给一次机会。
+"""
 
 from __future__ import annotations
 
 import logging
+import re
 import time
 from collections.abc import Callable, Iterator
 from typing import Any
@@ -16,6 +22,7 @@ from catman_io.config import Config
 from catman_io.dialog import Turn
 from catman_io.intent import Intent
 from catman_io.intent.llm import CHAT, DELEGATE
+from catman_io.intent.normalize import normalize
 from catman_io.intent.router import IntentRouter
 from catman_io.journal import Journal
 from catman_io.pipeline import Response
@@ -27,6 +34,9 @@ NO_BRAIN_PHRASE = "我淨係識做啲簡單嘢，呢個我答唔到。"
 BRAIN_ERROR_PHRASE = "大腦連唔到，等陣再試。"
 DELEGATED_PHRASE = "好，交咗俾 catman，搞掂會喺微信話你知。"
 NO_CATMAN_PHRASE = "而家未接到 catman，做唔到呢件事。"
+# 追问一个槽位后等答案等多久：跟进窗口本身是 followup_question_seconds（默认 10 s），
+# 再留一点给"重新叫唤醒词再答"的情况
+PENDING_SLOT_SECONDS = 30.0
 
 
 class IntentResponder:
@@ -56,6 +66,24 @@ class IntentResponder:
 
     def respond(self, turn: Turn, transcript: Transcript, speak: Callable[[str], bool]) -> Response:
         info = turn.info
+        pending = self.ctx.state.pop("pending", None)  # 只给一次机会：答非所问就作废
+        if pending is not None and self.clock() <= pending["expires"]:
+            filled = self._fill_pending(pending, transcript.text)
+            if filled is not None:
+                info["t_intent_done"] = self.clock()
+                info["text_normalized"] = normalize(transcript.text)
+                info["tier"] = "followup"
+                info["route_flags"] = ["slot_filled"]
+                info["intent"] = filled.name
+                info["rule_id"] = filled.rule_id
+                info["slots"] = filled.slots
+                info["confidence"] = filled.confidence
+                log.info(
+                    "turn %s fills %s.%s from %r", turn.id, filled.name, pending["slot"], transcript.text
+                )
+                if turn.cancelled.is_set():
+                    return Response(info={})
+                return self._act(turn, filled, speak)
         route = self.router.route(transcript.text, shadow_tag=turn.id)
         info["t_intent_done"] = self.clock()
         info["text_normalized"] = route.normalized
@@ -122,6 +150,15 @@ class IntentResponder:
         result = self.registry.run(intent, spec, self.ctx)
         info["t_action_done"] = self.clock()
         info["action_ok"] = result.ok
+        if result.ask:
+            info["ask"] = result.ask
+            self.ctx.state["pending"] = {
+                "intent": intent.name,
+                "slots": dict(intent.slots),
+                "slot": result.ask,
+                "rule_id": intent.rule_id,
+                "expires": self.clock() + PENDING_SLOT_SECONDS,
+            }
         if result.error:
             info["action_error"] = result.error
         if result.data:
@@ -133,6 +170,23 @@ class IntentResponder:
         return self._finish(
             turn, speak, result.say, intent.tier, followup=result.followup, ok=result.ok, error=result.error
         )
+
+    def _fill_pending(self, pending: dict[str, Any], text: str) -> Intent | None:
+        """上一回合追问了某个槽位：在这句话里找它（用该槽位类型的模式片段搜索，不要求整句都是它）。"""
+        rules = self.router.rules
+        spec = rules.intents.get(pending["intent"])
+        type_name = spec.slots.get(pending["slot"]) if spec is not None else None
+        st = rules.types.get(type_name) if type_name else None
+        if st is None:
+            return None
+        m = re.search(st.pattern, normalize(text))
+        if m is None:
+            return None
+        value = st.parse(m.group(0))
+        if value is None:
+            return None
+        slots = {**pending["slots"], pending["slot"]: value}
+        return Intent(pending["intent"], slots, 1.0, "followup", pending["rule_id"], m.group(0))
 
     def _delegate(self, turn: Turn, intent: Intent, speak: Callable[[str], bool]) -> Response:
         task = str(intent.slots.get("task") or "").strip()

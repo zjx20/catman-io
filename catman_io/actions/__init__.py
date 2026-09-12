@@ -32,6 +32,9 @@ log = logging.getLogger(__name__)
 class ActionResult:
     say: str | None = None  # 要念的话；None = 不出声
     followup: bool = False  # 期待用户接着说（更长的跟进窗口）
+    # 追问的槽位名（例如 "duration"）：缺了它做不了事，say 是反问；用户接着说的话先按这个槽位解析，
+    # 解析得到就带着它再执行本意图（责任在 responder），解析不到才当一句新话路由
+    ask: str | None = None
     ok: bool = True
     error: str | None = None
     data: dict[str, Any] = field(default_factory=dict)  # 写进日志

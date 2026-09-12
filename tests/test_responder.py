@@ -116,6 +116,35 @@ def test_rule_hit_runs_action(tmp_path):
     assert resp.followup and "幾耐" in spoken[0]
 
 
+def test_asked_slot_is_filled_by_the_next_utterance(tmp_path):
+    """计时没说时长：动作追问 → 下一句「三十分鐘」直接填进去执行；答非所问就作废；追问会过期。"""
+    r, ctx = make(tmp_path)
+    turn, spoken, resp = run(r, "幫我校個鬧鐘")
+    assert spoken == ["要計幾耐呀？"] and resp.followup and turn.info["ask"] == "duration"
+    assert ctx.state["pending"]["intent"] == "timer.set" and ctx.state["pending"]["slot"] == "duration"
+
+    turn, spoken, resp = run(r, "三十分钟")  # 识别器给的是简体，归一化后再解析
+    assert spoken == ["好，半個鐘後叫你。"] and resp.ok and not resp.followup  # 1800 s 念成半個鐘
+    assert turn.info["intent"] == "timer.set" and turn.info["tier"] == "followup"
+    assert turn.info["slots"] == {"duration": 1800} and turn.info["route_flags"] == ["slot_filled"]
+    assert ctx.timers.pending()[0].seconds == 1800 and "pending" not in ctx.state
+
+    # 答非所问：走正常路由，追问作废
+    ctx.timers.cancel_all()
+    run(r, "set個timer")
+    turn, spoken, resp = run(r, "而家幾點呀")
+    assert turn.info["intent"] == "time.now" and turn.info["tier"] == "rule" and "pending" not in ctx.state
+    turn, spoken, resp = run(r, "十個字")
+    assert turn.info["intent"] is None if "intent" in turn.info else True
+    assert spoken == [NO_BRAIN_PHRASE] and not ctx.timers.pending()
+
+    # 追问过期：30 秒后再答也不算
+    run(r, "set個timer")
+    ctx.state["pending"]["expires"] = r.clock() - 1
+    turn, spoken, resp = run(r, "十個字")
+    assert spoken == [NO_BRAIN_PHRASE] and not ctx.timers.pending() and "pending" not in ctx.state
+
+
 def test_llm_intent_and_candidate_case(tmp_path):
     r, ctx = make(tmp_path, llm=FakeLLM(Intent("volume.set", {"percent": 30}, 0.8, "llm", None, "raw")))
     turn, spoken, resp = run(r, "聲音調去三成")

@@ -93,7 +93,7 @@ def act_date(intent: Intent, ctx: ActionContext) -> ActionResult:
 def act_timer(intent: Intent, ctx: ActionContext) -> ActionResult:
     seconds = intent.slots.get("duration")
     if not seconds:
-        return ActionResult(say="要計幾耐呀？", followup=True)
+        return ActionResult(say="要計幾耐呀？", followup=True, ask="duration")
     seconds = int(seconds)
     if seconds > 24 * 3600:
         return ActionResult(say="太耐喇，最多計二十四個鐘。", ok=False, error="duration too long")
