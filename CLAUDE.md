@@ -44,12 +44,13 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
   是自动生成的版本说明。
   `catman_io/wakeword/models/VERSION` 写着代码推荐的版本，`scripts/wakeword_model.py pull` 只取模型文件（部分克隆），
   `publish v3 --notes ... --push` 发布新版本，`git checkout models/wakeword/v2` 可复现或重训。CI 也靠 `pull` 拿模型；
-  没模型时相关测试自动跳过。合成验证集的数字不能代替真机测试（v1 合成集全面领先 v0，真机反而更差）。
+  没模型时相关测试自动跳过。合成验证集的数字不能代替真机测试（v1 合成集全面领先 v0，真机反而更差）；
+  真人录音是最终裁判，v3 起 31 条真人录音进训练（四折交叉验证折外召回 100%，没加之前各配方只有 58%～71%）。
 - 唤醒词模型文件名就是 openWakeWord 里的模型名（`siu_maau_jan.onnx` → `Detection.model="siu_maau_jan"`），
   旁边同名 `.json` 记录训练数据、评估结果和配置。正样本训练时右对齐到 2 秒窗口末尾，所以 `phrases.py` 里
   正样本只能加前缀不能加后缀；负样本文本绝不能包含唤醒词（`tests/test_phrases.py` 守着）。
-  语速的多样性全部来自 TTS 多档语速（到 +100%），训练时不做后处理变速（`p_speed` / `p_tempo` 都是 0）；
-  `augment.time_stretch`（WSOLA 变速不变调）只用在 `evaluate` 的快语速压力测试里。只差一个声调的近音短语
+  TTS 语速只到 ±20%（v1/v2 加到 +100% 在真人录音上反而更差），后处理只保留轻度重采样变速（`p_speed` 0.5、0.9～1.1），
+  `p_tempo` 是 0：`augment.time_stretch`（WSOLA 变速不变调）只用在 `evaluate` 的快语速压力测试里。只差一个声调的近音短语
   （`phrases.NEAR_HOMOPHONES`）只合成来评估、不进训练：硬压它们会把同语速档的正样本一起压掉。
   真人录音放 `training/wakeword/real/<模型名>/positive/<说话人>/`（gitignore，publish 时随版本分支走），
   `data.extra_positive_dirs` 全部训练、`extra_positive_val_dirs` 只验证（每位说话人随机留几条），特征单独存成

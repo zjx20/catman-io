@@ -6,12 +6,12 @@ workdir: training/wakeword/work/siu_maau_jan
 
 tts:
   voices: [zh-HK-HiuGaaiNeural, zh-HK-HiuMaanNeural, zh-HK-WanLungNeural]
-  # 真人快说「小貓人」只有 0.4～0.5 s，而 +0% 的 TTS 接近 1 s；edge-tts 最高到 +100%（约 0.5 s），
-  # 一半的档位放在 +30% 以上，快语速才不是少数派（v0 只到 +20%，快说时分数上不去阈值）
-  rates: ["-20%", "-10%", "+0%", "+10%", "+20%", "+30%", "+40%", "+60%", "+80%", "+100%"]
+  # 正样本语速只到 ±20%（v0 的档位）。v1 / v2 把语速加到 +100% 想覆盖真人快说，结果真人录音上召回反而从 0.71
+  # 掉到 0.58：+30% 以上的 TTS 片段像压缩过的合成音而不像人快说，还把正常语速的正样本稀释了一半；
+  # 加上真人录音之后差距更明显（四折交叉验证：±20% 档 1.00，+100% 档 0.88～0.90）。快语速靠真人录音本身。
+  rates: ["-20%", "-10%", "+0%", "+10%", "+20%"]
   pitches: ["-30Hz", "-15Hz", "+0Hz", "+15Hz", "+30Hz"]
-  # 负样本也配一档快的，快说的「小貓」「燒貓人」不能因为快就被放过
-  negative_rates: ["-10%", "+0%", "+15%", "+40%"]
+  negative_rates: ["-10%", "+0%", "+15%"]
   negative_pitches: ["+0Hz"]
   other_language_voices:
     zh-CN: [zh-CN-XiaoxiaoNeural, zh-CN-YunxiNeural]
@@ -23,9 +23,14 @@ data:
   positive_phrases: []
   adversarial_phrases: []
   general_phrases: []
-  # 真人录音（16 kHz 单声道 wav，或任意采样率会自动重采样）。哪怕只有几十条，也能明显提升真实环境的召回。
-  extra_positive_dirs: []
+  # 真人录音（webdemo 存的 3 秒片段，按说话人分子目录）。没有真人录音时各版本在真人录音上召回只有 0.6～0.7，
+  # 加 23 条进训练、留 8 条验证后折外召回 1.0——这是目前最有效的一步，多录几个人、几种距离和语气更好。
+  extra_positive_dirs: [training/wakeword/real/siu_maau_jan/positive]
+  extra_positive_val_dirs: [training/wakeword/real/siu_maau_jan/positive_val]
   extra_negative_dirs: []
+  extra_negative_val_dirs: []
+  # 真人录音相对合成片段的增强轮数倍率：3 时折外召回 0.97（最快那条 0.40 s 漏），8 时 1.00
+  extra_positive_weight: 8
   val_fraction: 0.15
   # openWakeWord 预计算的通用负样本特征，按小时计下载（每小时约 15 MB）；0 = 不用。
   # 20 小时时模型会死记训练负样本（通用音频每小时误唤醒 38 次），100 小时降到 0.2 次以下
@@ -35,11 +40,10 @@ data:
 
 augment:
   clip_seconds: 2.0
-  # 语速的变化全部来自 TTS 合成的多档语速，训练时不做任何后处理变速（v1 上过 0.85～1.3 倍重采样变速，
-  # 真机上中等语速反而比 v0 差；WSOLA 变速不变调的几种用法在合成验证集上也都拖低正常语速的召回，
-  # 只留给 evaluate 做快语速压力测试）。
+  # 轻度重采样变速（同时变调）是唯一保留的后处理变速：留出整个 TTS 音色验证时它把召回从 0.69 提到 0.86，
+  # 真人录音上也高 0.1。WSOLA 变速不变调（p_tempo）试过几种用法都拖低正常语速的召回，只留给 evaluate 做压力测试。
   speed_factors: [0.9, 1.0, 1.1]
-  p_speed: 0.0
+  p_speed: 0.5
   tempo_range: [0.9, 1.5]
   p_tempo: 0.0
   # 变速后不短于 0.45 s（真人再快也说不到更短）
