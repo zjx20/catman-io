@@ -11,7 +11,7 @@ from __future__ import annotations
 import enum
 import threading
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -142,6 +142,8 @@ class Dialog:
         self._thinking_beeped = False
         self._followup_window = 0.0
         self._pending_timers: list[Any] = []
+        # 状态变化的回调（在调用 on_frame / on_event 的那个线程里被调）：网页 demo 用它把状态推给页面
+        self.on_state: Callable[[State, float], None] | None = None
 
     # ---- 输入 ----
 
@@ -282,6 +284,8 @@ class Dialog:
         self.t_state = now
         if state == State.THINKING:
             self._thinking_beeped = False
+        if self.on_state is not None:
+            self.on_state(state, now)
 
     def _enter_idle(self, now: float) -> list[Command]:
         self._enter(State.IDLE, now)

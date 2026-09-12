@@ -10,6 +10,8 @@
 另有普通 HTTP 路由供页面回放已存样本：GET /recordings 列出所有样本
 （label/name/url/seconds/bytes/mtime，最新在前）；GET /rec/{label}/{name} 提供对应的 wav 文件；
 DELETE /rec/{label}/{name} 删除它。label 必须在 LABELS 里、name 必须是保存时的文件名格式，防目录穿越。
+
+/dialog 是对话 demo 页：浏览器麦克风进整条管线、回复音频回浏览器播，协议见 ``dialog.py``。
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ from pathlib import Path
 import numpy as np
 
 from catman_io.audio.frames import FRAME_SAMPLES, FRAME_SECONDS, SAMPLE_RATE
+from catman_io.config import Config
 from catman_io.wakeword import Detection, WakeWordDetector
 
 log = logging.getLogger(__name__)
@@ -141,8 +144,12 @@ def make_app(
     cooldown: float = 2.0,
     vad_threshold: float = 0.0,
     record_dir: Path = Path("data/recordings"),
+    cfg: Config | None = None,
 ):
+    """唤醒词测试页（/）用上面几个检测参数；对话 demo 页（/dialog）按 ``cfg`` 组装整条管线。"""
     from aiohttp import WSMsgType, web
+
+    from .dialog import add_dialog_routes
 
     record_dir = Path(record_dir)
 
@@ -171,9 +178,7 @@ def make_app(
         path = record_dir / label / name
         if not path.is_file():
             raise web.HTTPNotFound()
-        return web.FileResponse(
-            path, headers={"Content-Type": "audio/wav", "Cache-Control": "no-store"}
-        )
+        return web.FileResponse(path, headers={"Content-Type": "audio/wav", "Cache-Control": "no-store"})
 
     async def recording_delete(request):
         label, name = request.match_info["label"], request.match_info["name"]
@@ -257,6 +262,7 @@ def make_app(
     app.router.add_get("/rec/{label}/{name}", recording_file)
     app.router.add_delete("/rec/{label}/{name}", recording_delete)
     app.router.add_get("/ws", ws_handler)
+    add_dialog_routes(app, cfg or Config(), model_paths)
     app.router.add_static("/static/", STATIC_DIR, show_index=False)
     return app
 
@@ -271,6 +277,7 @@ def run(
     vad_threshold: float = 0.0,
     record_dir: Path = Path("data/recordings"),
     open_browser: bool = False,
+    cfg: Config | None = None,
 ) -> None:
     try:
         from aiohttp import web
@@ -279,9 +286,10 @@ def run(
 
     # 先建一次检测器：基础模型没下载 / 模型文件不对，这里就报错，而不是等浏览器连上来
     WakeWordDetector(model_paths, threshold=threshold, patience=patience, cooldown=cooldown)
-    app = make_app(model_paths, threshold, patience, cooldown, vad_threshold, record_dir)
+    app = make_app(model_paths, threshold, patience, cooldown, vad_threshold, record_dir, cfg=cfg)
     url = f"http://{'127.0.0.1' if host in ('0.0.0.0', '') else host}:{port}/"
-    print(f"webdemo: open {url}  (recordings → {Path(record_dir).resolve()})")
+    print(f"webdemo: open {url}  (wake-word test)  or  {url}dialog  (full dialog demo)")
+    print(f"recordings → {Path(record_dir).resolve()}")
     if host not in ("127.0.0.1", "localhost", "::1"):
         print(
             "note: browsers only allow microphone access on http://localhost or https://; "

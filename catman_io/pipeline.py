@@ -49,7 +49,7 @@ from catman_io.tts import Synthesizer, clean_for_speech, split_sentences
 from catman_io.tts.earcons import earcon
 from catman_io.tts.speaker import Speaker
 from catman_io.vad import SileroVAD
-from catman_io.wakeword import WakeWordDetector
+from catman_io.wakeword import Detection, WakeWordDetector
 
 log = logging.getLogger(__name__)
 
@@ -170,6 +170,9 @@ class VoicePipeline:
         self._ring: deque[np.ndarray] = deque(maxlen=ring_frames)
         self._stop = threading.Event()
         self._worker_busy = False
+        self._force_wake = False
+        # 最近一帧的状态 / 唤醒分数 / 人声概率，给网页 demo 之类的旁观者看（每帧整体替换，读的一方不用加锁）
+        self.meter: dict[str, Any] = {"state": self.dialog.state.value, "wake": 0.0, "vad": 0.0}
         self._worker = threading.Thread(target=self._worker_loop, name="responder", daemon=True)
         self.last_text = ""
         self.turns_done = 0
@@ -180,6 +183,10 @@ class VoicePipeline:
         self._stop.set()
         if self.stop_source is not None:
             self.stop_source()
+
+    def wake_now(self) -> None:
+        """下一帧当作听到了唤醒词（按钮唤醒 / 测试用）；可以从别的线程调。"""
+        self._force_wake = True
 
     def status(self) -> dict[str, Any]:
         return {
@@ -215,6 +222,10 @@ class VoicePipeline:
         now = self.clock()
         self._ring.append(frame)
         dets = self.detector.process(frame)
+        if self._force_wake:
+            self._force_wake = False
+            if not dets:
+                dets = [Detection("manual", 1.0, self.detector.stream_time, time.time())]
         prob = self.vad.process(frame)
         cmds = []
         if self.timers is not None:
@@ -229,8 +240,9 @@ class VoicePipeline:
         cmds += self.dialog.on_frame(now, frame, dets, prob)
         for cmd in cmds:
             self._execute(cmd, now)
+        score = max(self.detector.last_scores.values()) if self.detector.last_scores else 0.0
+        self.meter = {"state": self.dialog.state.value, "wake": score, "vad": prob}
         if self.on_status is not None:
-            score = max(self.detector.last_scores.values()) if self.detector.last_scores else 0.0
             self.on_status(f"{self.dialog.state.value:<9} wake={score:4.2f} vad={prob:4.2f} {self.last_text}")
         waiting = self.dialog.state in (State.THINKING, State.SPEAKING)
         if self.realtime or (self.file_mode and waiting):
@@ -402,8 +414,15 @@ def build_pipeline(
     on_turn: Callable[[Turn, str], None] | None = None,
     model_paths: list[str] | None = None,
     api: bool = False,
+    frames: Any = None,
+    output: Any = None,
+    stop_source: Callable[[], None] | None = None,
 ) -> VoicePipeline:
-    """按配置把各部件装起来。识别器 / 合成器缺失时降级（只切句不识别 / 只打日志不出声）并警告。"""
+    """按配置把各部件装起来。识别器 / 合成器缺失时降级（只切句不识别 / 只打日志不出声）并警告。
+
+    ``frames`` / ``output`` 可以注入别的音频来源与去处（网页 demo：浏览器麦克风与扬声器），
+    不给就按 ``input_wav`` / ``output_wav`` 决定：文件、或者真麦克风 / 真声卡。
+    """
     from catman_io.journal import JournalWriter, build_journal
     from catman_io.tts import create_synthesizer
     from catman_io.tts.speaker import ListOutput, SoundDeviceOutput, WavOutput
@@ -434,8 +453,10 @@ def build_pipeline(
         tts = create_synthesizer(cfg)
     except Exception as e:  # noqa: BLE001
         log.warning("tts disabled: %s", e)
-    if output_wav is not None:
-        output: Any = WavOutput(output_wav)
+    if output is not None:
+        pass
+    elif output_wav is not None:
+        output = WavOutput(output_wav)
     elif input_wav is not None:
         output = ListOutput()
     else:
@@ -464,9 +485,10 @@ def build_pipeline(
         if user_on_turn is not None:
             user_on_turn(turn, status)
 
-    stop_source = None
-    if input_wav is not None:
-        frames: Any = WavFrames(input_wav, channel=cfg.audio.channel)
+    if frames is not None:
+        pass
+    elif input_wav is not None:
+        frames = WavFrames(input_wav, channel=cfg.audio.channel)
     else:
         from catman_io.audio.capture import MicCapture
 

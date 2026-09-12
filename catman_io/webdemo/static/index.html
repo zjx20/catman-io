@@ -4,68 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>小貓人 · 唤醒词测试</title>
-<style>
-  :root {
-    color-scheme: light dark;
-    --surface: #fcfcfb; --surface-2: #f0efec; --border: #d9d8d3;
-    --text: #0b0b0b; --text-2: #52514e; --muted: #8a8984;
-    --series: #2a78d6; --series-soft: #cde2fb;
-    --good: #0ca30c; --critical: #d03b3b; --warning: #fab219;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --surface: #1a1a19; --surface-2: #262625; --border: #3a3a38; --text: #ffffff; --text-2: #c3c2b7;
-            --muted: #8f8e88; --series: #3987e5; --series-soft: #184f95; }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--surface); color: var(--text);
-         font: 14px/1.5 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
-  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 40px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  h1 small { color: var(--text-2); font-weight: normal; font-size: 13px; margin-left: 8px; }
-  #status { color: var(--text-2); min-height: 1.5em; }
-  .row { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin: 12px 0; }
-  label { color: var(--text-2); display: inline-flex; align-items: center; gap: 6px; }
-  input[type=range] { width: 120px; }
-  select { max-width: 260px; }
-  button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border);
-           background: var(--surface-2); color: var(--text); cursor: pointer; }
-  button.primary { background: var(--series); color: #fff; border-color: var(--series); }
-  button:disabled { opacity: .5; cursor: default; }
-  .card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 12px 0; background: var(--surface); }
-  .meter { display: flex; align-items: center; gap: 16px; }
-  .meter .num { font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 110px; }
-  .bar { position: relative; flex: 1; height: 18px; background: var(--surface-2); border-radius: 9px; overflow: hidden; }
-  .bar .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--series); border-radius: 9px; transition: width 60ms linear; }
-  .bar .fill.hit { background: var(--good); }
-  .bar .thr { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text-2); }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-  .stat .k { color: var(--muted); font-size: 12px; }
-  .stat .v { font-size: 20px; font-variant-numeric: tabular-nums; }
-  canvas { width: 100%; height: 180px; display: block; }
-  #hover { color: var(--text-2); font-size: 12px; min-height: 1.5em; font-variant-numeric: tabular-nums; }
-  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); }
-  th { color: var(--text-2); font-weight: normal; font-size: 12px; }
-  .hint { color: var(--muted); font-size: 12px; }
-  code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
-  .chip { border-radius: 999px; padding: 4px 12px; }
-  .chip[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
-  .chip .cnt { font-variant-numeric: tabular-nums; opacity: .7; margin-left: 2px; }
-  .tag { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; }
-  .tag.positive { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
-  .tag.negative { background: color-mix(in srgb, var(--warning) 24%, transparent);
-                  color: color-mix(in srgb, var(--warning) 80%, var(--text)); }
-  .tag.hit { background: var(--series-soft); color: var(--series); }
-  td .op { padding: 3px 12px; }
-  td .op.del { color: var(--critical); }
-  .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-  .card-head b { font-size: 14px; }
-</style>
+<link rel="stylesheet" href="/static/demo.css">
 </head>
 <body>
 <main>
   <h1>「小貓人」唤醒词测试<small>浏览器麦克风 → 服务端 openWakeWord 检测器</small></h1>
   <div id="status">未连接</div>
+  <nav class="hint">整条对话管线（唤醒 → 聆听 → 识别 → 应答 → 播报）见 <a href="/dialog">对话 demo 页</a>。</nav>
 
   <div class="card">
     <div class="row">

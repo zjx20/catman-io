@@ -70,7 +70,9 @@ python -m training.wakeword all --config training/wakeword/configs/siu_maau_jan.
 - 配置：`config.py` 递归解析、未知键报错、密钥只经 `*_env`（`secret()` 用时读取）；新 section 要同步 `config.example.yaml`。
 - 文档、注释、提交信息用中文；README 面向使用者，不提具体硬件型号。日志与异常信息用英文。
 - 测试不需要麦克风 / 扬声器 / 网络：假识别、假合成、`ListOutput` 扬声器、注入的 HTTP transport；
-  标 `network` 的默认跳过；真识别测试靠 `CATMAN_IO_TEST_ASR_ROOT`。`tests/test_webdemo.py` 有检查前后端消息类型一致的测试。
+  标 `network` 的默认跳过；真识别测试靠 `CATMAN_IO_TEST_ASR_ROOT`。`tests/test_webdemo.py` 有检查前后端消息类型一致的测试
+  （两个页面：`/` 唤醒词测试走 `server.py` 的 `/ws`，`/dialog` 对话 demo 走 `dialog.py` 的 `/ws/dialog`，后者是一条
+  注入了浏览器音频进出的 `VoicePipeline`，音频按实时节奏回送、`Speaker.stop()` 会叫浏览器清掉排队的音频）。
 
 ## 排查
 

@@ -27,7 +27,7 @@ def ready():
 
 
 def test_static_files_present():
-    for name in ("index.html", "app.js", "pcm-worklet.js"):
+    for name in ("index.html", "app.js", "pcm-worklet.js", "demo.css", "dialog.html", "dialog.js"):
         assert (STATIC_DIR / name).exists(), name
 
 
@@ -136,3 +136,90 @@ def test_frontend_protocol_matches_server():
     for kind in ("hello", "frame", "saved", "config", "error"):
         assert f"m.type === '{kind}'" in js, kind
     assert json.loads('{"ok": true}')["ok"]
+
+    # 对话页与 dialog.py 同样对得上
+    js = (STATIC_DIR / "dialog.js").read_text(encoding="utf-8")
+    server = (Path(__file__).parent.parent / "catman_io" / "webdemo" / "dialog.py").read_text("utf-8")
+    for kind in ("wake", "stop"):
+        assert f"type: '{kind}'" in js and f'kind == "{kind}"' in server, kind
+    for kind in ("hello", "meter", "state", "turn", "audio_stop", "error"):
+        assert f"m.type === '{kind}'" in js and f'"type": "{kind}"' in server, kind
+
+
+def test_dialog_websocket_flow(ready, tmp_path, monkeypatch):
+    """对话页：按钮唤醒 → 一句话 → 假识别 → 规则应答（不合成，回复只有文字）→ 回合结果，中间有提示音音频。"""
+    from aiohttp import WSMsgType
+    from aiohttp.test_utils import TestClient, TestServer
+
+    import catman_io.asr as asr_mod
+    from catman_io.asr import Transcript
+    from catman_io.config import Config
+
+    class FakeASR:
+        def transcribe(self, audio):
+            return Transcript("而家幾點", duration=len(audio) / 16000, elapsed=0.01)
+
+    monkeypatch.setattr(asr_mod, "create_recognizer", lambda cfg: FakeASR())
+    cfg = Config.load(None)
+    cfg.data_dir = str(tmp_path)
+    cfg.tts.backend = "none"
+    cfg.dialog.followup_seconds = 0.0  # 回完直接回到待唤醒，序列好断言
+    speech = read_wav(DATA / "negative_weather_wanlung.wav")
+    silence = np.zeros(1280, np.int16)
+
+    async def run():
+        app = make_app(threshold=0.5, record_dir=tmp_path, cfg=cfg)
+        async with TestClient(TestServer(app)) as client:
+            assert "对话 demo" in await (await client.get("/dialog")).text()
+            assert (await client.get("/static/dialog.js")).status == 200
+            ws = await client.ws_connect("/ws/dialog")
+            hello = await ws.receive_json()
+            assert hello["type"] == "hello" and hello["models"] == ["siu_maau_jan"]
+            assert hello["asr"] and not hello["tts"] and hello["intents"] > 0 and hello["earcons"]
+
+            got = {"audio": 0, "states": [], "turn": None, "meters": 0}
+
+            async def drain(timeout=0.05):
+                while True:
+                    try:
+                        m = await ws.receive(timeout=timeout)
+                    except asyncio.TimeoutError:
+                        return
+                    if m.type == WSMsgType.BINARY:
+                        got["audio"] += len(m.data)
+                        continue
+                    d = json.loads(m.data)
+                    if d["type"] == "meter":
+                        got["meters"] += 1
+                    elif d["type"] == "state":
+                        got["states"].append(d["state"])
+                    elif d["type"] == "turn":
+                        got["turn"] = d
+
+            await ws.send_json({"type": "wake"})
+            audio = np.concatenate([np.zeros(8000, np.int16), speech, np.zeros(16000, np.int16)])
+            for i in range(0, len(audio), 1280):
+                await ws.send_bytes(audio[i : i + 1280].tobytes())
+            # 管线的钟是墙钟，事件要等下一帧才被处理：持续喂静音直到回合结束
+            for _ in range(200):
+                await ws.send_bytes(silence.tobytes())
+                await drain()
+                if got["turn"] is not None:
+                    break
+            turn = got["turn"]
+            assert turn is not None, got
+            assert turn["status"] == "ok" and turn["text"] == "而家幾點" and turn["intent"] == "time.now"
+            assert turn["reply"] and turn["wake_model"] == "manual"
+            assert turn["latency"]["speech_end"] is not None and turn["latency"]["asr"] is not None
+            assert got["states"][:2] == ["listening", "thinking"] and got["states"][-1] == "idle"
+            assert "speaking" in got["states"]
+            assert got["audio"] > 0 and got["meters"] > 0  # 唤醒提示音回来了、仪表在走
+
+            await ws.send_json({"type": "nope"})
+            for _ in range(20):
+                await drain()
+            await ws.close()
+        # 回合写进了日志目录
+        assert list((tmp_path / "journal").rglob("*.jsonl"))
+
+    asyncio.run(run())

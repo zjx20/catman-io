@@ -32,7 +32,7 @@
 | `catman_io.tts` | edge-tts 粤语合成、可打断的扬声器、提示音 | ✅ |
 | `catman_io.dialog` / `pipeline` | 对话状态机与整条流水线（`catman-io run`） | ✅ |
 | `catman_io.journal` / `api` | 回合日志、bad case 标记、复盘包、给 catman 的 HTTP API | ✅ |
-| `catman_io.webdemo` | 浏览器麦克风测唤醒词 | ✅ |
+| `catman_io.webdemo` | 浏览器页面：测唤醒词、收集录音样本；对话 demo 页用浏览器麦克风与扬声器跑整条管线 | ✅ |
 | `catman_io.stream` | 把音频流推给 live 模型 | 🚧 接口已定 |
 
 ## 快速开始
@@ -179,12 +179,22 @@ python scripts/wakeword_model.py publish v3 --notes "改了什么、真机表现
 ### 网页版测试（浏览器麦克风）
 
 ```bash
-catman-io webdemo --open          # 默认 http://127.0.0.1:8765 ，--record-dir 指定录音目录
+catman-io webdemo --open                   # 默认 http://127.0.0.1:8765 ，--record-dir 指定录音目录
+catman-io webdemo -c config.yaml --open    # 对话 demo 页要按配置组装整条管线，带上 config
 ```
 
-页面里点"开始监听"，对着麦克风说「小貓人」，能看到实时分数、命中记录、折合每小时的命中次数；
-"保存最近 3 秒"会把录音存成 16 kHz WAV，正好用来收集真人正样本和误唤醒片段。浏览器只允许
-`http://localhost` 或 https 页面用麦克风，在别的机器上开页面要走 SSH 隧道（`ssh -L 8765:127.0.0.1:8765 <主机>`）。
+两个页面：
+
+- `/`（唤醒词测试）：点"开始监听"，对着麦克风说「小貓人」，能看到实时分数、命中记录、折合每小时的命中次数；
+  "保存最近 3 秒"会把录音存成 16 kHz WAV，正好用来收集真人正样本和误唤醒片段，存下来的样本可以回放、删除。
+- `/dialog`（对话 demo）：浏览器麦克风与扬声器接上整条管线——说「小貓人」→ 听到"叮"→ 说话 → 识别 → 应答 → 合成的回复
+  在浏览器里播出来；页面上能看到状态在 待唤醒 → 聆听中 → 思考中 → 播报中 → 跟进 之间流转，每回合的识别文本、
+  命中的意图、回复和各段延迟（唤醒后多久开口、说完到出声、全程）。"按钮唤醒"不用喊唤醒词，播报中按下就是打断。
+  和设备上 `catman-io run` 是同一套部件，只是音频进出换成了浏览器；识别要先 `catman-io setup --asr`，
+  合成走 edge-tts 要联网，规则没命中时接了 `brain.llm` 才会闲聊。
+
+浏览器只允许 `http://localhost` 或 https 页面用麦克风，在别的机器上开页面要走 SSH 隧道
+（`ssh -L 8765:127.0.0.1:8765 <主机>`）。
 
 ## 配置
 

@@ -494,6 +494,10 @@ def cmd_webdemo(args) -> int:
     from catman_io.webdemo.server import run
 
     cfg = Config.load(args.config)
+    if args.no_tts:
+        cfg.tts.backend = "none"
+    if args.no_asr:
+        cfg.asr.backend = "none"
     w = cfg.wakeword
     run(
         host=args.host,
@@ -505,6 +509,7 @@ def cmd_webdemo(args) -> int:
         vad_threshold=args.vad if args.vad is not None else w.vad_threshold,
         record_dir=args.record_dir,
         open_browser=args.open,
+        cfg=cfg,
     )
     return 0
 
@@ -617,12 +622,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--pitch", help="音高，例如 -20Hz")
     p.set_defaults(fn=cmd_say)
 
-    p = sub.add_parser("webdemo", help="网页版测试：浏览器麦克风实时看唤醒词命中，并可保存录音做训练样本")
+    p = sub.add_parser(
+        "webdemo",
+        help="网页版测试：/ 看唤醒词命中并保存录音做训练样本；/dialog 用浏览器麦克风与扬声器跑整条对话管线",
+    )
     _add_wake_args(p)
     p.add_argument("--host", default="127.0.0.1", help="监听地址（浏览器只允许 localhost 或 https 用麦克风）")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--record-dir", type=Path, default=Path("data/recordings"), help="保存录音的目录")
     p.add_argument("--open", action="store_true", help="启动后自动打开浏览器")
+    p.add_argument("--no-asr", action="store_true", help="对话页不识别（只看端点切句）")
+    p.add_argument("--no-tts", action="store_true", help="对话页不合成（回复只显示文字）")
     p.set_defaults(fn=cmd_webdemo)
 
     args = ap.parse_args(argv)

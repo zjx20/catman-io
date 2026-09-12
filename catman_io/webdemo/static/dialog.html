@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小貓人 · 对话 demo</title>
+<link rel="stylesheet" href="/static/demo.css">
+</head>
+<body>
+<main>
+  <h1>「小貓人」对话 demo<small>浏览器麦克风 → 唤醒 → 提示音 → 聆听 → 识别 → 应答 → 合成 → 浏览器播放</small></h1>
+  <div id="status">未连接</div>
+  <nav class="hint">只测唤醒词、收集录音样本请去 <a href="/">唤醒词测试页</a>。设备上跑同一套管线用 <code>catman-io run -c config.yaml</code>。</nav>
+
+  <div class="card">
+    <div class="row">
+      <button id="start" class="primary">开始</button>
+      <button id="stop" disabled>停止</button>
+      <button id="wake" disabled title="不用喊唤醒词直接进入聆听；播报中按下就是打断">按钮唤醒</button>
+      <button id="stopSpeak" disabled>停止播报</button>
+      <label>麦克风 <select id="device"><option value="">默认</option></select></label>
+      <label>音量 <input type="range" id="volume" min="0" max="1" step="0.05" value="0.8"></label>
+      <label><input type="checkbox" id="ec" checked> 回声消除</label>
+      <label><input type="checkbox" id="ns" checked> 降噪</label>
+      <label><input type="checkbox" id="agc" checked> 自动增益</label>
+    </div>
+    <div class="hint">说「小貓人」→ 听到"叮"就说话（比如「而家幾點」「計時三分鐘」「大聲啲」）→ 停顿约 0.6 s 算说完 → 回复播完后几秒内可以直接接着说，不用再叫。外放时保持回声消除打开，或者戴耳机。</div>
+  </div>
+
+  <div class="card">
+    <div class="states" id="states">
+      <div class="st on" data-s="idle">待唤醒</div><div class="arrow">→</div>
+      <div class="st" data-s="listening">聆听中</div><div class="arrow">→</div>
+      <div class="st" data-s="thinking">思考中</div><div class="arrow">→</div>
+      <div class="st" data-s="speaking">播报中</div><div class="arrow">→</div>
+      <div class="st" data-s="followup">跟进</div>
+    </div>
+    <div class="row"><b id="stateText">待唤醒</b><span class="hint" id="stateSince"></span></div>
+    <div class="meters">
+      <div class="m"><div class="k">唤醒分数 <b id="wakeV">0.00</b></div>
+        <div class="bar"><div class="fill" id="wakeFill"></div><div class="thr" id="thrLine" style="left:50%"></div></div></div>
+      <div class="m"><div class="k">人声概率 <b id="vadV">0.00</b></div>
+        <div class="bar"><div class="fill vad" id="vadFill"></div></div></div>
+      <div class="m"><div class="k">输入电平 <b id="level">–</b></div><div class="k">丢帧 <b id="dropped">0</b></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><b>对话记录</b><span class="hint" id="turnsHint">每一回合结束后记一条，最新在上</span></div>
+    <div id="turns"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><b>部件</b><span class="hint">来自服务端配置（<code>catman-io webdemo -c config.yaml</code>）</span></div>
+    <div class="stats parts" id="parts"></div>
+    <div class="hint" id="partsHint"></div>
+  </div>
+</main>
+<script src="/static/dialog.js"></script>
+</body>
+</html>

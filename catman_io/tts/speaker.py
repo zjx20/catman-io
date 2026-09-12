@@ -28,9 +28,11 @@ class Output(Protocol):
     keepalive: bool  # 空闲时是否持续写静音（真声卡要，文件不要）
 
     def write(self, pcm: np.ndarray) -> None:
-        """阻塞写一块 16 kHz int16 单声道。"""
+        """阻塞写一块 16 kHz int16 单声道（写多久就该阻塞多久，Speaker 靠它计时）。"""
 
     def close(self) -> None: ...
+
+    # 可选：def flush(self) -> None —— stop() 时把已经送出去但还没播的音频也清掉
 
 
 class SoundDeviceOutput:
@@ -137,6 +139,9 @@ class Speaker:
         with self._cv:
             self._q.clear()
             self._cv.notify_all()
+        flush = getattr(self.output, "flush", None)
+        if flush is not None:  # 音频已经送去别处排队的输出（网页 demo 的浏览器），叫它也清掉
+            flush()
 
     @property
     def is_busy(self) -> bool:
