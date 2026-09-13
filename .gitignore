@@ -10,6 +10,7 @@ dist/
 .mypy_cache/
 *.log
 .env
+config.yaml
 
 # 训练产物（音频、特征、检查点）体积大，不进仓库；导出的最终模型手动 install 到 catman_io/wakeword/models/
 training/wakeword/work/
